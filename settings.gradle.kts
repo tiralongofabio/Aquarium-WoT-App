@@ -24,4 +24,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "Aquarium-WoT-App"
 include(":app")
- 
+include(":domain")
+include(":data")
+include(":uicompose")
