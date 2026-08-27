@@ -4,7 +4,7 @@ package it.uniboft.aquarium.uicompose.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.viewmodel.compose.viewModel
+//import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -13,6 +13,8 @@ import it.uniboft.aquarium.uicompose.screens.scanner.ScannerScreen
 import it.uniboft.aquarium.uicompose.screens.scanner.ScannerViewModel
 import it.uniboft.aquarium.uicompose.screens.splash.SplashScreen
 import it.uniboft.aquarium.uicompose.screens.splash.SplashViewModel
+
+import androidx.hilt.navigation.compose.hiltViewModel
 
 
 @Composable
@@ -26,7 +28,8 @@ fun AppNavigation() {
     ) {
 
         composable(Routes.Splash.route) {
-            val viewModel: SplashViewModel = viewModel()
+            //val viewModel: SplashViewModel = viewModel()
+            val viewModel: SplashViewModel = hiltViewModel()
             val state by viewModel.state.collectAsState()
 
 
@@ -47,7 +50,8 @@ fun AppNavigation() {
 
 
         composable(Routes.Scanner.route) {
-            val viewModel: ScannerViewModel = viewModel()
+            //val viewModel: ScannerViewModel = viewModel()
+            val viewModel: ScannerViewModel = hiltViewModel()
             val uiState by viewModel.uiState.collectAsState()
 
 
