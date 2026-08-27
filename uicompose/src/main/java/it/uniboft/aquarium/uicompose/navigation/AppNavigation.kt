@@ -25,7 +25,6 @@ fun AppNavigation() {
         composable(Routes.Splash.route) { /* Placeholder */ }
 
         composable(Routes.Scanner.route) {
-            // Usa viewModel() nativo. Hilt lo intercetterà automaticamente.
             val viewModel: ScannerViewModel = viewModel()
             val uiState by viewModel.uiState.collectAsState()
 
@@ -34,13 +33,14 @@ fun AppNavigation() {
                 uiState = uiState,
                 onQrCodeScanned = viewModel::onQrCodeScanned,
                 onResetScanner = viewModel::resetScanner,
-                onScanSuccess = { config ->
+                onScanSuccess = {
                     navController.navigate(Routes.Home.route) {
                         popUpTo(Routes.Scanner.route) { inclusive = true }
                     }
                 }
             )
         }
+
 
 
         composable(Routes.Home.route) {

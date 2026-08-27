@@ -2,6 +2,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Permesso obbligatorio per accedere all'hardware -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+
+    <!-- Best Practice Play Store: dichiara l'uso dell'hardware fotografico.
+         required="true" evita che l'app venga scaricata su dispositivi senza fotocamera -->
+    <uses-feature android:name="android.hardware.camera" android:required="true" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"

@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.unibo.android.automazione"
+    namespace = "it.uniboft.demo.aquarium_wot_app"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.unibo.android.automazione"
+        applicationId = "it.uniboft.demo.aquarium_wot_app"
         minSdk = 26
         targetSdk = 34
         versionCode = 1

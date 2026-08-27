@@ -29,7 +29,6 @@ import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
-import it.uniboft.aquarium.domain.models.ApparatoConfig
 import java.util.concurrent.Executors
 
 
@@ -38,12 +37,17 @@ fun ScannerScreen(
     uiState: ScannerUiState,
     onQrCodeScanned: (String) -> Unit,
     onResetScanner: () -> Unit,
-    onScanSuccess: (ApparatoConfig) -> Unit
+    onScanSuccess: () -> Unit
 ) {
     val context = LocalContext.current
+
+    // Stato reattivo per la gestione del permesso
     var hasCameraPermission by remember {
         mutableStateOf(
-            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED
         )
     }
 
@@ -55,6 +59,7 @@ fun ScannerScreen(
     }
 
 
+    // Richiede il permesso all'avvio se non è già stato concesso
     LaunchedEffect(Unit) {
         if (!hasCameraPermission) {
             permissionLauncher.launch(Manifest.permission.CAMERA)
@@ -62,9 +67,10 @@ fun ScannerScreen(
     }
 
 
+    // Trigger di navigazione legato allo stato
     LaunchedEffect(uiState) {
         if (uiState is ScannerUiState.Success) {
-            onScanSuccess(uiState.config)
+            onScanSuccess()
             onResetScanner()
         }
     }
@@ -78,12 +84,11 @@ fun ScannerScreen(
             contentAlignment = Alignment.Center
         ) {
             if (hasCameraPermission) {
-                // Passa la callback invece del metodo del ViewModel
                 CameraPreview(onQrCodeScanned = onQrCodeScanned)
                 ScannerOverlay()
             } else {
                 Text(
-                    text = "Permesso fotocamera necessario per scansionare il QR Code.",
+                    text = "Permesso fotocamera necessario per inquadrare il QR Code dell'acquario.",
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(16.dp)
                 )
@@ -104,7 +109,6 @@ fun ScannerScreen(
 }
 
 
-
 @Composable
 private fun CameraPreview(onQrCodeScanned: (String) -> Unit) {
     val context = LocalContext.current
@@ -118,6 +122,8 @@ private fun CameraPreview(onQrCodeScanned: (String) -> Unit) {
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT
                 )
+                // Assicura stabilità di rendering tra Compose e CameraX
+                implementationMode = PreviewView.ImplementationMode.COMPATIBLE
             }
         },
         modifier = Modifier.fillMaxSize(),
@@ -178,6 +184,8 @@ private fun ScannerOverlay() {
 private class QrCodeAnalyzer(
     private val onQrCodeScanned: (String) -> Unit
 ) : ImageAnalysis.Analyzer {
+
+    // Ottimizzato per cercare esclusivamente QR Code
     private val options = BarcodeScannerOptions.Builder()
         .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
         .build()
@@ -193,9 +201,11 @@ private class QrCodeAnalyzer(
                 .addOnSuccessListener { barcodes ->
                     barcodes.firstOrNull()?.rawValue?.let { onQrCodeScanned(it) }
                 }
-                .addOnCompleteListener { imageProxy.close() }
+                .addOnCompleteListener { imageProxy.close() } // Indispensabile chiudere il proxy
         } else {
             imageProxy.close()
         }
     }
 }
+
+
