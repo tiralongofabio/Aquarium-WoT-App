@@ -11,6 +11,8 @@ import androidx.navigation.compose.rememberNavController
 import it.uniboft.aquarium.uicompose.screens.home.HomeScreen
 import it.uniboft.aquarium.uicompose.screens.scanner.ScannerScreen
 import it.uniboft.aquarium.uicompose.screens.scanner.ScannerViewModel
+import it.uniboft.aquarium.uicompose.screens.splash.SplashScreen
+import it.uniboft.aquarium.uicompose.screens.splash.SplashViewModel
 
 
 @Composable
@@ -20,9 +22,29 @@ fun AppNavigation() {
 
     NavHost(
         navController = navController,
-        startDestination = Routes.Scanner.route
+        startDestination = Routes.Splash.route
     ) {
-        composable(Routes.Splash.route) { /* Placeholder */ }
+
+        composable(Routes.Splash.route) {
+            val viewModel: SplashViewModel = viewModel()
+            val state by viewModel.state.collectAsState()
+
+
+            SplashScreen(
+                state = state,
+                onNavigateToHome = {
+                    navController.navigate(Routes.Home.route) {
+                        popUpTo(Routes.Splash.route) { inclusive = true }
+                    }
+                },
+                onNavigateToScanner = {
+                    navController.navigate(Routes.Scanner.route) {
+                        popUpTo(Routes.Splash.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
 
         composable(Routes.Scanner.route) {
             val viewModel: ScannerViewModel = viewModel()
@@ -42,9 +64,7 @@ fun AppNavigation() {
         }
 
 
-
         composable(Routes.Home.route) {
-            // Stessa logica per la Home, se non passavi il ViewModel prima
             HomeScreen(
                 onNavigateToNotifications = {
                     navController.navigate(Routes.Notifications.route)
@@ -53,8 +73,12 @@ fun AppNavigation() {
         }
 
 
-        composable(Routes.Notifications.route) { /* Placeholder */ }
+        composable(Routes.Notifications.route) {
+            // Placeholder
+        }
     }
 }
+
+
 
 
