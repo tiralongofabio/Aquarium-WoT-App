@@ -22,6 +22,9 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.tooling.preview.Preview
+import it.uniboft.aquarium.domain.models.WaterQuality
+
 
 
 // --- STATEFUL SCREEN ---
@@ -224,5 +227,44 @@ private fun DataRow(label: String, value: String) {
     ) {
         Text(text = label, style = MaterialTheme.typography.bodyLarge)
         Text(text = value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+
+//preview
+@Preview(showBackground = true, name = "Home - Dati OK")
+@Composable
+fun HomeContentPreview() {
+    MaterialTheme {
+        HomeContent(
+            uiState = HomeUiState(
+                waterQuality = WaterQuality(timestamp = 0L, ph = 7.2, orp = 300.0, temperature = 25.5),
+                isPumpRunning = true,
+                isOffline = false,
+                errorMessage = null
+            ),
+            snackbarHostState = SnackbarHostState(),
+            onTogglePump = {},
+            onNavigateToNotifications = {}
+        )
+    }
+}
+
+
+@Preview(showBackground = true, name = "Home - Offline Mode")
+@Composable
+fun HomeContentOfflinePreview() {
+    MaterialTheme {
+        HomeContent(
+            uiState = HomeUiState(
+                waterQuality = WaterQuality(timestamp = 0L, ph = 6.8, orp = 250.0, temperature = 24.0),
+                isPumpRunning = false,
+                isOffline = true,
+                errorMessage = "Connessione persa"
+            ),
+            snackbarHostState = SnackbarHostState(),
+            onTogglePump = {},
+            onNavigateToNotifications = {}
+        )
     }
 }

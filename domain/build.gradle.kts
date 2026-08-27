@@ -2,14 +2,16 @@ plugins {
     alias(libs.plugins.kotlin.jvm)
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-    }
+
+// JVM Toolchain: allinea automaticamente 'compileJava' e 'compileKotlin' a Java 17
+kotlin {
+    jvmToolchain(17)
 }
+
 
 dependencies {
     implementation(libs.coroutines.core)
 }
+
 
 

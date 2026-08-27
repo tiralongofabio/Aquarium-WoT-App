@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
+    alias(libs.plugins.kotlin.compose)
 }
 
 android {
@@ -45,17 +46,33 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 }
 
 dependencies {
-    implementation(project(":domain"))
-    implementation(project(":data"))
+    // Dipendenze dai moduli interni
     implementation(project(":uicompose"))
+    implementation(project(":data"))
+    implementation(project(":domain"))
 
-    // Hilt
+
+    // AndroidX Core & Lifecycle
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.activity.compose)
+
+
+    // Compose (Standard Ufficiale)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.ui.graphics)
+    implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.androidx.material3)
+    debugImplementation(libs.androidx.ui.tooling)
+
+
+    // Hilt DI
     implementation(libs.hilt.android)
     "ksp"(libs.hilt.compiler)
-
-    // Core
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.activity.compose)
 }
+
+
+
 
 
