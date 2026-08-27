@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "it.uniboft.demo.aquarium_wot_app"
-    compileSdk = 34
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "it.uniboft.demo.aquarium_wot_app"

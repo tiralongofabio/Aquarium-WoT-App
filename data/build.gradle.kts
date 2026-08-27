@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.unibo.android.automazione.data"
-    compileSdk = 34
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 26

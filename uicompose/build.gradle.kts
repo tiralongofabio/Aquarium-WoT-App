@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "com.unibo.android.automazione.uicompose"
-    compileSdk = 34
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 26
