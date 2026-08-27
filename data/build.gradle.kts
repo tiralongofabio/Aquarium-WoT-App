@@ -26,6 +26,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 
 dependencies {
     implementation(project(":domain"))
+    implementation(libs.androidx.security.crypto)
 
     // Hilt per Dependency Injection
     implementation(libs.hilt.android)
