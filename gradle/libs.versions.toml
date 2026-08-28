@@ -21,6 +21,7 @@ espressoCore = "3.7.0"
 camerax = "1.4.0"
 securityCrypto = "1.1.0-alpha06"
 javaxInject = "1"
+commonsCodec = "1.16.1"
 
 
 [libraries]
@@ -72,6 +73,8 @@ androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycl
 androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 javax-inject = {group = "javax.inject", name = "javax.inject", version.ref = "javaxInject" }
+
+commons-codec = { group = "commons-codec", name = "commons-codec", version.ref = "commonsCodec" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }

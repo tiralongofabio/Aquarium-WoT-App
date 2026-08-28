@@ -7,6 +7,9 @@ import dagger.hilt.components.SingletonComponent
 import it.uniboft.aquarium.data.repositories.DeviceConfigRepositoryImpl
 import it.uniboft.aquarium.domain.repositories.IDeviceConfigRepository
 import javax.inject.Singleton
+import it.uniboft.aquarium.data.repositories.TotpGeneratorImpl
+import it.uniboft.aquarium.domain.repositories.ITotpGenerator
+
 
 
 @Module
@@ -19,4 +22,11 @@ abstract class DataModule {
     abstract fun bindDeviceConfigRepository(
         impl: DeviceConfigRepositoryImpl
     ): IDeviceConfigRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTotpGenerator(
+        impl: TotpGeneratorImpl
+    ): ITotpGenerator
+
 }
