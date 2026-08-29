@@ -9,6 +9,7 @@ import it.uniboft.aquarium.domain.repositories.IWotRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
+import it.uniboft.aquarium.domain.models.SensorConfig
 
 
 class HttpRepositoryImpl @Inject constructor(
@@ -70,5 +71,29 @@ class HttpRepositoryImpl @Inject constructor(
             if (!response.isSuccessful) throw Exception("Errore avvio pulizia")
         }
     }
+
+    override suspend fun getSensorConfig(): Result<SensorConfig> = withContext(ioDispatcher) {
+        runCatching {
+            val response = api.getSensorConfig()
+            if (response.isSuccessful) {
+                response.body() ?: throw Exception("Configurazione vuota")
+            } else {
+                throw Exception("Errore HTTP ${response.code()}: Impossibile leggere la configurazione")
+            }
+        }
+    }
+
+
+    override suspend fun updateSensorConfig(config: SensorConfig): Result<Unit> = withContext(ioDispatcher) {
+        runCatching {
+            val response = api.updateSensorConfig(config)
+            if (!response.isSuccessful) {
+                throw Exception("Errore HTTP ${response.code()}: Impossibile salvare la configurazione")
+            }
+        }
+    }
+
+
+
 
 }

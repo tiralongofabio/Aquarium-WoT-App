@@ -4,6 +4,8 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import it.uniboft.aquarium.domain.models.SensorConfig
+import retrofit2.http.PUT
 
 
 data class SensorPropertiesDto(val temperature: Double?, val pH: Double?, val oxygenLevel: Double?)
@@ -21,6 +23,13 @@ interface WotHttpApi {
 
     @GET("filterpump/properties")
     suspend fun getPumpState(): Response<PumpPropertiesDto>
+
+    @GET("waterqualitysensor/properties/config")
+    suspend fun getSensorConfig(): Response<SensorConfig>
+
+
+    @PUT("waterqualitysensor/properties/config")
+    suspend fun updateSensorConfig(@Body config: SensorConfig): Response<Any>
 
 
     @POST("filterpump/actions/setPumpSpeed")

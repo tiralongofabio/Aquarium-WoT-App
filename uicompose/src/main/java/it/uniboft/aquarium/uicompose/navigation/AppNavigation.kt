@@ -15,6 +15,7 @@ import it.uniboft.aquarium.uicompose.screens.splash.SplashScreen
 import it.uniboft.aquarium.uicompose.screens.splash.SplashViewModel
 
 import androidx.hilt.navigation.compose.hiltViewModel
+import it.uniboft.aquarium.uicompose.screens.configuration.ConfigurationScreen
 import it.uniboft.aquarium.uicompose.screens.settings.SettingsScreen
 
 
@@ -89,6 +90,9 @@ fun AppNavigation() {
             )
         }
 
+        composable(Routes.Configuration.route) {
+            ConfigurationScreen(onNavigateBack = { navController.popBackStack() })
+        }
 
 
         composable(Routes.Notifications.route) {
