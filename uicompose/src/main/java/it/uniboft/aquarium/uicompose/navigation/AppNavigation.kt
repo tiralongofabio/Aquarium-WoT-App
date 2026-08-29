@@ -15,6 +15,7 @@ import it.uniboft.aquarium.uicompose.screens.splash.SplashScreen
 import it.uniboft.aquarium.uicompose.screens.splash.SplashViewModel
 
 import androidx.hilt.navigation.compose.hiltViewModel
+import it.uniboft.aquarium.uicompose.screens.settings.SettingsScreen
 
 
 @Composable
@@ -70,11 +71,24 @@ fun AppNavigation() {
 
         composable(Routes.Home.route) {
             HomeScreen(
-                onNavigateToNotifications = {
-                    navController.navigate(Routes.Notifications.route)
-                }
+                onNavigateToSettings = { navController.navigate(Routes.Settings.route) }
             )
         }
+
+
+        composable(Routes.Settings.route) {
+            SettingsScreen(
+                onNavigateToNotifications = { navController.navigate(Routes.Notifications.route) },
+                onNavigateToConfiguration = { navController.navigate(Routes.Configuration.route) },
+                onNavigateToScanner = {
+                    navController.navigate(Routes.Scanner.route) {
+                        // Opzionale: pulisce lo stack se consideriamo l'aggiunta come un reset
+                    }
+                },
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
 
 
         composable(Routes.Notifications.route) {

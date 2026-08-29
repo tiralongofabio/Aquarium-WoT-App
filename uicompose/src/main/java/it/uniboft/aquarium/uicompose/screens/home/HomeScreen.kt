@@ -25,7 +25,7 @@ import androidx.compose.animation.AnimatedVisibility
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    onNavigateToNotifications: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -58,7 +58,7 @@ fun HomeScreen(
                 title = { Text("Acquario WoT") },
                 actions = {
                     IconButton(
-                        onClick = onNavigateToNotifications,
+                        onClick = onNavigateToSettings,
                         modifier = Modifier.semantics { contentDescription = "Impostazioni" }
                     ) {
                         Icon(Icons.Default.Settings, contentDescription = null)
