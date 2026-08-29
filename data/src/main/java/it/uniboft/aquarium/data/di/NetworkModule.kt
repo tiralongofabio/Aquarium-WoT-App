@@ -15,6 +15,8 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 
+
+
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
@@ -45,11 +47,14 @@ object NetworkModule {
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://192.168.1.100:8080/") // Sostituire con IP/hostname reale in produzione
+            // 10.0.2.2 è il localhost della macchina fisica visto dall'emulatore Android.
+            // 8080 è la porta su cui "node-wot" espone le Thing in app.ts.
+            .baseUrl("http://10.0.2.2:8080/")
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
+
 
 
     @Provides

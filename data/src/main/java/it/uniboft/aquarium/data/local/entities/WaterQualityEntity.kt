@@ -1,8 +1,10 @@
 package it.uniboft.aquarium.data.local.entities
 
+
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import it.uniboft.aquarium.domain.models.WaterQuality
+
 
 @Entity(tableName = "water_quality")
 data class WaterQualityEntity(
@@ -10,9 +12,13 @@ data class WaterQualityEntity(
     @PrimaryKey val id: Int = 1,
     val timestamp: Long,
     val ph: Double,
-    val orp: Double,
+    val oxygenLevel: Double, // Rinominato da orp a oxygenLevel
     val temperature: Double
 ) {
-    // Mapper verso il dominio
-    fun toDomain() = WaterQuality(timestamp, ph, orp, temperature)
+    // Mapper corretto verso il dominio
+    fun toDomain() = WaterQuality(
+        temperature = temperature,
+        ph = ph,
+        oxygenLevel = oxygenLevel
+    )
 }

@@ -13,6 +13,7 @@ import it.uniboft.aquarium.domain.repositories.ILocalRepository
 import it.uniboft.aquarium.domain.repositories.IWotRepository
 import it.uniboft.aquarium.domain.usecases.SyncWotDataUseCase
 import it.uniboft.aquarium.domain.usecases.UpdatePumpStateUseCase
+import kotlinx.coroutines.CoroutineDispatcher
 import javax.inject.Singleton
 
 
@@ -23,21 +24,20 @@ object RepositoryModule {
 
     @Provides
     @Singleton
-    fun provideLocalRepository(wotDao: WotDao): ILocalRepository {
-        return LocalRepositoryImpl(wotDao)
+    fun provideLocalRepository(
+        wotDao: WotDao,
+        @IoDispatcher ioDispatcher: CoroutineDispatcher
+    ): ILocalRepository {
+        return LocalRepositoryImpl(wotDao, ioDispatcher)
     }
 
 
     @Provides
     @Singleton
-    fun provideWotRepository(api: WotHttpApi): IWotRepository {
-        // Qui la logica del Flavor: per ora forniamo l'implementazione HTTP.
-        // Quando implementeremo il BLE, faremo uno switch usando BuildConfig.FLAVOR
-        return HttpRepositoryImpl(api)
+    fun provideWotRepository(api: WotHttpApi, @IoDispatcher ioDispatcher: CoroutineDispatcher): IWotRepository {
+        return HttpRepositoryImpl(api, ioDispatcher)
     }
 
-
-    // --- Provider per gli Use Cases ---
 
     @Provides
     fun provideSyncWotDataUseCase(

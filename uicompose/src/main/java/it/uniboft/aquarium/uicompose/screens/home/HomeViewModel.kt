@@ -5,12 +5,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import it.uniboft.aquarium.domain.models.WaterQuality
-import it.uniboft.aquarium.domain.repositories.IWotRepository
+import it.uniboft.aquarium.domain.repositories.ILocalRepository
+import it.uniboft.aquarium.domain.usecases.SyncWotDataUseCase
+import it.uniboft.aquarium.domain.usecases.UpdatePumpStateUseCase
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -20,7 +24,7 @@ import kotlin.time.Duration.Companion.seconds
 
 data class HomeUiState(
     val isLoading: Boolean = false,
-    val waterQuality: WaterQuality? = null,
+    val waterQuality: WaterQuality = WaterQuality.Neutral,
     val isPumpRunning: Boolean = false,
     val errorMessage: String? = null
 )
@@ -28,12 +32,29 @@ data class HomeUiState(
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val wotRepository: IWotRepository
+    private val syncWotDataUseCase: SyncWotDataUseCase,
+    private val updatePumpStateUseCase: UpdatePumpStateUseCase,
+    localRepository: ILocalRepository
 ) : ViewModel() {
 
 
-    private val _uiState = MutableStateFlow(HomeUiState())
-    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+    // Stato mutevole interno per gestire flag operativi (caricamento, errori, UI)
+    private val _internalState = MutableStateFlow(HomeUiState())
+
+
+    // Sintassi extension function: inferenza di tipo garantita dal compilatore
+    val uiState: StateFlow<HomeUiState> = _internalState
+        .combine(localRepository.getWaterQualityStream()) { state, localWaterQuality ->
+            state.copy(waterQuality = localWaterQuality ?: WaterQuality.Neutral)
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = HomeUiState()
+        )
+
+
+
 
 
     private var pollingJob: Job? = null
@@ -48,7 +69,7 @@ class HomeViewModel @Inject constructor(
         if (pollingJob?.isActive == true) return
         pollingJob = viewModelScope.launch {
             while (isActive) {
-                fetchWaterQuality()
+                syncWaterQuality()
                 delay(10.seconds)
             }
         }
@@ -60,17 +81,19 @@ class HomeViewModel @Inject constructor(
     }
 
 
-    fun fetchWaterQuality() {
+    fun syncWaterQuality() {
         viewModelScope.launch {
-            if (_uiState.value.waterQuality == null) {
-                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            }
-            wotRepository.fetchWaterQuality().fold(
-                onSuccess = { data ->
-                    _uiState.update { it.copy(isLoading = false, waterQuality = data) }
+            _internalState.update { it.copy(isLoading = true, errorMessage = null) }
+
+
+            // L'Use Case scarica da HTTP e salva in Room.
+            // La UI si aggiorna automaticamente grazie a getWaterQualityStream().
+            syncWotDataUseCase.execute().fold(
+                onSuccess = {
+                    _internalState.update { it.copy(isLoading = false) }
                 },
                 onFailure = { error ->
-                    _uiState.update { it.copy(isLoading = false, errorMessage = error.localizedMessage) }
+                    _internalState.update { it.copy(isLoading = false, errorMessage = error.localizedMessage) }
                 }
             )
         }
@@ -79,12 +102,12 @@ class HomeViewModel @Inject constructor(
 
     fun togglePump(isRunning: Boolean) {
         viewModelScope.launch {
-            wotRepository.updatePumpState(isRunning).fold(
+            updatePumpStateUseCase.execute(isRunning).fold(
                 onSuccess = {
-                    _uiState.update { it.copy(isPumpRunning = isRunning) }
+                    _internalState.update { it.copy(isPumpRunning = isRunning) }
                 },
                 onFailure = { error ->
-                    _uiState.update { it.copy(errorMessage = "Comando fallito: ${error.localizedMessage}") }
+                    _internalState.update { it.copy(errorMessage = "Comando fallito: ${error.localizedMessage}") }
                 }
             )
         }
@@ -92,6 +115,6 @@ class HomeViewModel @Inject constructor(
 
 
     fun errorShown() {
-        _uiState.update { it.copy(errorMessage = null) }
+        _internalState.update { it.copy(errorMessage = null) }
     }
 }

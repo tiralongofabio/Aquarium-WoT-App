@@ -1,54 +1,54 @@
 package it.uniboft.aquarium.data.repositories
 
 
-import it.uniboft.aquarium.data.remote.api.PumpCommandDto
+import it.uniboft.aquarium.data.di.IoDispatcher
 import it.uniboft.aquarium.data.remote.api.WotHttpApi
 import it.uniboft.aquarium.domain.models.WaterQuality
 import it.uniboft.aquarium.domain.repositories.IWotRepository
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 
 class HttpRepositoryImpl @Inject constructor(
-    private val api: WotHttpApi
+    private val api: WotHttpApi,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : IWotRepository {
 
 
-    override suspend fun fetchWaterQuality(): Result<WaterQuality> {
-        return try {
+    override suspend fun fetchWaterQuality(): Result<WaterQuality> = withContext(ioDispatcher) {
+        runCatching {
             val response = api.getWaterQuality()
-
             if (response.isSuccessful) {
-                val dto = response.body() ?: throw Exception("Body nullo nella risposta HTTP")
-
-                val waterQuality = WaterQuality(
-                    timestamp = dto.timestamp,
-                    ph = dto.ph,
-                    orp = dto.orp,
-                    temperature = dto.temperature
+                val data = response.body()
+                WaterQuality(
+                    temperature = data?.temperature ?: 0.0,
+                    ph = data?.pH ?: 0.0,
+                    oxygenLevel = data?.oxygenLevel ?: 0.0
                 )
-
-                Result.success(waterQuality)
             } else {
-                Result.failure(Exception("Errore HTTP: ${response.code()} - ${response.message()}"))
+                throw Exception("Errore HTTP ${response.code()}: Impossibile leggere i sensori")
             }
-        } catch (e: Exception) {
-            Result.failure(e)
         }
     }
 
 
-    override suspend fun updatePumpState(isRunning: Boolean): Result<Unit> {
-        return try {
-            val command = PumpCommandDto(isRunning = isRunning)
-            val response = api.setPumpState(command)
+    override suspend fun updatePumpState(isRunning: Boolean): Result<Unit> = withContext(ioDispatcher) {
+        runCatching {
+            val targetSpeed = if (isRunning) 100 else 0
 
-            if (response.isSuccessful) {
-                Result.success(Unit)
-            } else {
-                Result.failure(Exception("Errore HTTP: ${response.code()} - ${response.message()}"))
+            // Retrofit invia l'intero direttamente come payload JSON
+            val response = api.setPumpSpeed(targetSpeed)
+
+            if (!response.isSuccessful) {
+                throw Exception("Errore di rete ${response.code()}: Impossibile comandare la pompa")
             }
-        } catch (e: Exception) {
-            Result.failure(e)
+
+            val body = response.body()
+            if (body == null || !body.success) {
+                // Intercetta un eventuale rifiuto logico da parte dell'orchestratore WoT
+                throw Exception("Rifiutato dal dispositivo: ${body?.message ?: "Sconosciuto"}")
+            }
         }
     }
 }

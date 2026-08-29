@@ -67,12 +67,13 @@ fun HomeScreen(
     ) { paddingValues ->
         PullToRefreshBox(
             isRefreshing = uiState.isLoading,
-            onRefresh = viewModel::fetchWaterQuality,
+            onRefresh = viewModel::syncWaterQuality,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            if (uiState.waterQuality == null && uiState.isLoading) {
+            // Verifica contro il default Neutro anziché contro null
+            if (uiState.waterQuality == WaterQuality.Neutral && uiState.isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(
                         modifier = Modifier.semantics { contentDescription = "Caricamento sensori" }
@@ -85,9 +86,8 @@ fun HomeScreen(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    uiState.waterQuality?.let { wq ->
-                        WaterQualitySensors(wq)
-                    }
+                    // Il safe-call (?.let) è stato rimosso, passiamo l'oggetto direttamente
+                    WaterQualitySensors(waterQuality = uiState.waterQuality)
 
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -100,6 +100,7 @@ fun HomeScreen(
                 }
             }
         }
+
     }
 }
 
@@ -118,8 +119,8 @@ private fun WaterQualitySensors(waterQuality: WaterQuality) {
             modifier = Modifier.weight(1f)
         )
         SensorCard(
-            title = "ORP",
-            value = "${waterQuality.orp} mV",
+            title = "O2",
+            value = "${waterQuality.oxygenLevel} mV",
             modifier = Modifier.weight(1f)
         )
     }

@@ -1,42 +1,43 @@
 package it.uniboft.aquarium.data.remote.api
 
 
-import com.google.gson.annotations.SerializedName
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 
 
-// DTO per il parsing JSON della risposta dal nodo WoT
-data class WaterQualityDto(
-    @SerializedName("timestamp") val timestamp: Long,
-    @SerializedName("ph") val ph: Double,
-    @SerializedName("orp") val orp: Double,
-    @SerializedName("temperature") val temperature: Double
+data class SensorPropertiesDto(
+    val temperature: Double?,
+    val pH: Double?,
+    val oxygenLevel: Double?
 )
 
 
-// DTO per inviare i comandi (es. accensione pompa)
-data class PumpCommandDto(
-    @SerializedName("isRunning") val isRunning: Boolean
+data class PumpPropertiesDto(
+    val pumpSpeed: Int?,
+    val filterStatus: String?
+)
+
+
+// DTO mappato sulla reale risposta dell'Action WoT
+data class PumpActionResponseDto(
+    val success: Boolean,
+    val newSpeed: Int,
+    val message: String
 )
 
 
 interface WotHttpApi {
-    // L'header Authorization viene iniettato a livello di client OkHttp tramite un Interceptor.
-    // Questo mantiene l'interfaccia pulita e garantisce la freschezza del token TOTP.
+    @GET("waterqualitysensor/properties")
+    suspend fun getWaterQuality(): Response<SensorPropertiesDto>
 
 
-    @GET("api/properties/waterQuality")
-    suspend fun getWaterQuality(): Response<WaterQualityDto>
+    @GET("filterpump/properties")
+    suspend fun getPumpState(): Response<PumpPropertiesDto>
 
 
-    @POST("api/actions/pump")
-    suspend fun setPumpState(
-        @Body command: PumpCommandDto
-    ): Response<Unit>
+    // Inviando un Int come @Body, Gson serializza direttamente il numero "100" (o "0")
+    @POST("filterpump/actions/setPumpSpeed")
+    suspend fun setPumpSpeed(@Body speed: Int): Response<PumpActionResponseDto>
 }
-
-
-
