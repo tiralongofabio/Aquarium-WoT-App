@@ -9,7 +9,7 @@ import javax.inject.Inject
 class SaveDeviceConfigUseCase @Inject constructor(
     private val repository: IDeviceConfigRepository
 ) {
-    fun execute(config: ApparatoConfig): Result<Unit> {
+    suspend fun execute(config: ApparatoConfig): Result<Unit> {
         if (config.idApparato.isBlank() || config.totpSecret.isBlank()) {
             return Result.failure(IllegalArgumentException("Parametri di configurazione non validi"))
         }
