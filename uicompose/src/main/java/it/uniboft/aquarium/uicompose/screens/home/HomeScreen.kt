@@ -19,6 +19,8 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import it.uniboft.aquarium.domain.models.WaterQuality
 import java.util.Locale
+import androidx.compose.animation.AnimatedVisibility
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,10 +84,31 @@ fun HomeScreen(
                 }
             } else {
                 Column(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    // Banner persistente: appare al 3° fallimento, sparisce al 1° successo
+                    AnimatedVisibility(visible = uiState.isConnectionUnstable) {
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Apparato WoT non disponibile",
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
+                    }
+
+
                     WaterQualitySensors(waterQuality = uiState.waterQuality)
+
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
                     PumpControlCard(
