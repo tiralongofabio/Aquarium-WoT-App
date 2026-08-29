@@ -3,6 +3,7 @@ package it.uniboft.aquarium.data.repositories
 
 import it.uniboft.aquarium.data.di.IoDispatcher
 import it.uniboft.aquarium.data.remote.api.WotHttpApi
+import it.uniboft.aquarium.domain.models.PumpState
 import it.uniboft.aquarium.domain.models.WaterQuality
 import it.uniboft.aquarium.domain.repositories.IWotRepository
 import kotlinx.coroutines.CoroutineDispatcher
@@ -35,20 +36,39 @@ class HttpRepositoryImpl @Inject constructor(
 
     override suspend fun updatePumpState(isRunning: Boolean): Result<Unit> = withContext(ioDispatcher) {
         runCatching {
-            val targetSpeed = if (isRunning) 100 else 0
-
-            // Retrofit invia l'intero direttamente come payload JSON
+            // Imposta fissa la velocità a 70% quando attivata dalla UI
+            val targetSpeed = if (isRunning) 70 else 0
             val response = api.setPumpSpeed(targetSpeed)
+            if (!response.isSuccessful) throw Exception("Errore HTTP: Impossibile comandare la pompa")
+        }
+    }
 
-            if (!response.isSuccessful) {
-                throw Exception("Errore di rete ${response.code()}: Impossibile comandare la pompa")
-            }
+    override suspend fun fetchPumpState(): Result<PumpState> = withContext(ioDispatcher) {
+        runCatching {
+            val response = api.getPumpState()
+            if (response.isSuccessful) {
+                val dto = response.body() ?: throw Exception("Payload della pompa vuoto")
 
-            val body = response.body()
-            if (body == null || !body.success) {
-                // Intercetta un eventuale rifiuto logico da parte dell'orchestratore WoT
-                throw Exception("Rifiutato dal dispositivo: ${body?.message ?: "Sconosciuto"}")
+                // Mapper esplicito: DTO (Data) -> Entity (Domain)
+                PumpState(
+                    isRunning = (dto.pumpSpeed ?: 0) > 0 && dto.filterStatus != "cleaning",
+                    speed = dto.pumpSpeed ?: 0,
+                    filterHealth = dto.filterHealth ?: 100.0,
+                    isCleaning = dto.filterStatus == "cleaning"
+                )
+            } else {
+                throw Exception("Errore lettura pompa: ${response.code()}")
             }
         }
     }
+
+
+
+    override suspend fun startCleaningCycle(): Result<Unit> = withContext(ioDispatcher) {
+        runCatching {
+            val response = api.startCleaningCycle()
+            if (!response.isSuccessful) throw Exception("Errore avvio pulizia")
+        }
+    }
+
 }
