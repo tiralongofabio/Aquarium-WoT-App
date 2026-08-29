@@ -22,6 +22,10 @@ import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
 import it.uniboft.aquarium.domain.repositories.IWotRepository
 import kotlinx.coroutines.async
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+
+
 
 data class HomeUiState(
     val isLoading: Boolean = false,
@@ -30,6 +34,7 @@ data class HomeUiState(
     val pumpSpeed: Int = 0,
     val filterHealth: Double = 100.0,
     val isCleaning: Boolean = false,
+    val isOffline: Boolean = false, // Traccia lo stato di connessione continuo
     val errorMessage: String? = null
 )
 
@@ -38,7 +43,7 @@ data class HomeUiState(
 class HomeViewModel @Inject constructor(
     private val syncWotDataUseCase: SyncWotDataUseCase,
     private val updatePumpStateUseCase: UpdatePumpStateUseCase,
-    private val wotRepository: IWotRepository, // Iniezione aggiunta
+    private val wotRepository: IWotRepository,
     localRepository: ILocalRepository
 ) : ViewModel() {
 
@@ -63,56 +68,74 @@ class HomeViewModel @Inject constructor(
         if (pollingJob?.isActive == true) return
         pollingJob = viewModelScope.launch {
             while (isActive) {
-                syncWaterQualityAndPump()
+                syncData(isSilent = true)
                 delay(5.seconds)
             }
         }
     }
+
+
     fun stopPolling() { pollingJob?.cancel() }
 
 
-    fun syncWaterQualityAndPump() {
+    // Chiamato dalla UI quando l'utente fa Pull-to-Refresh
+    fun manualRefresh() {
         viewModelScope.launch {
+            syncData(isSilent = false)
+        }
+    }
+
+
+    private suspend fun syncData(isSilent: Boolean) {
+        if (!isSilent) {
             _internalState.update { it.copy(isLoading = true, errorMessage = null) }
+        }
 
 
-            // Esegue le due operazioni di rete in parallelo (best practice per performance)
+        // coroutineScope fornisce il contesto necessario per usare async in modo sicuro
+        coroutineScope {
             val sensorDeferred = async { syncWotDataUseCase.execute() }
             val pumpDeferred = async { wotRepository.fetchPumpState() }
 
 
-            // Attende la conclusione di entrambe
             val sensorResult = sensorDeferred.await()
             val pumpResult = pumpDeferred.await()
 
 
-            // Valuta il risultato della pompa (che guida la UI della card)
-            pumpResult.fold(
-                onSuccess = { pumpState ->
-                    _internalState.update {
-                        it.copy(
-                            isLoading = false,
-                            // Usa i nomi delle proprietà del modello di dominio puro (PumpState)
-                            isPumpRunning = pumpState.isRunning,
-                            pumpSpeed = pumpState.speed,
-                            filterHealth = pumpState.filterHealth,
-                            isCleaning = pumpState.isCleaning,
-                            // Se la pompa va ma i sensori falliscono, propaga l'errore dei sensori
-                            errorMessage = sensorResult.exceptionOrNull()?.localizedMessage
-                        )
-                    }
+            // Usiamo fold innestato per aggirare ogni potenziale problema dell'IDE
+            // con l'inferenza di tipo delle inline class (come kotlin.Result)
+            sensorResult.fold(
+                onSuccess = {
+                    pumpResult.fold(
+                        onSuccess = { pumpState ->
+                            _internalState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    isOffline = false, // Reset stato offline
+                                    isPumpRunning = pumpState.isRunning,
+                                    pumpSpeed = pumpState.speed,
+                                    filterHealth = pumpState.filterHealth,
+                                    isCleaning = pumpState.isCleaning
+                                )
+                            }
+                        },
+                        onFailure = { handleOfflineState(isSilent) }
+                    )
                 },
-                onFailure = { pumpError ->
-                    _internalState.update {
-                        it.copy(
-                            isLoading = false,
-                            // Priorità all'errore della pompa, ma se entrambi falliscono, uniamo i messaggi
-                            errorMessage = sensorResult.exceptionOrNull()?.let { sensorError ->
-                                "Errore Sensori: ${sensorError.localizedMessage}\nErrore Pompa: ${pumpError.localizedMessage}"
-                            } ?: pumpError.localizedMessage
-                        )
-                    }
-                }
+                onFailure = { handleOfflineState(isSilent) }
+            )
+        }
+    }
+
+
+    private fun handleOfflineState(isSilent: Boolean) {
+        val wasOffline = _internalState.value.isOffline
+        _internalState.update {
+            it.copy(
+                isLoading = false,
+                isOffline = true,
+                // Mostra l'errore SOLO se l'utente ha forzato il refresh o se l'app è appena andata offline
+                errorMessage = if (!wasOffline || !isSilent) "API WoT non disponibili o non raggiungibili." else null
             )
         }
     }
@@ -120,11 +143,9 @@ class HomeViewModel @Inject constructor(
 
 
     fun togglePump(isRunning: Boolean) {
-        // Aggiornamento ottimistico della UI
         _internalState.update { it.copy(isPumpRunning = isRunning, pumpSpeed = if (isRunning) 70 else 0) }
         viewModelScope.launch {
             updatePumpStateUseCase.execute(isRunning).onFailure { error ->
-                // Rollback in caso di fallimento
                 _internalState.update { it.copy(isPumpRunning = !isRunning, errorMessage = "Comando fallito: ${error.localizedMessage}") }
             }
         }
@@ -143,4 +164,5 @@ class HomeViewModel @Inject constructor(
 
     fun errorShown() { _internalState.update { it.copy(errorMessage = null) } }
 }
+
 

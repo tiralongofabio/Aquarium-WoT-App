@@ -67,7 +67,7 @@ fun HomeScreen(
     ) { paddingValues ->
         PullToRefreshBox(
             isRefreshing = uiState.isLoading,
-            onRefresh = viewModel::syncWaterQualityAndPump, // ← Allineato al nuovo nome del metodo
+            onRefresh = viewModel::manualRefresh,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)

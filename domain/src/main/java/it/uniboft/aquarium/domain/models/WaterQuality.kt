@@ -4,11 +4,11 @@ package it.uniboft.aquarium.domain.models
 data class WaterQuality(
     val temperature: Double,
     val ph: Double,
-    val oxygenLevel: Double // Modificato da 'orp' a 'oxygenLevel' per matchare il backend
+    val oxygenLevel: Double
 ) {
     companion object {
-        // Default neutro per la UI in assenza di connessione o DB
-        val Neutral = WaterQuality(temperature = 0.0, ph = 0.0, oxygenLevel = 0.0)
+        // Valori di default richiesti finché il DB non si popola
+        val Neutral = WaterQuality(temperature = 20.0, ph = 7.0, oxygenLevel = 8.0)
     }
 }
 
