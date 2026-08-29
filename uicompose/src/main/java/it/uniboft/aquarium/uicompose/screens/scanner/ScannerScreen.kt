@@ -1,6 +1,5 @@
 package it.uniboft.aquarium.uicompose.screens.scanner
 
-
 import android.Manifest
 import android.content.pm.PackageManager
 import android.view.ViewGroup
@@ -31,7 +30,6 @@ import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
 
-
 @Composable
 fun ScannerScreen(
     uiState: ScannerUiState,
@@ -41,7 +39,6 @@ fun ScannerScreen(
 ) {
     val context = LocalContext.current
 
-    // Stato reattivo per la gestione del permesso
     var hasCameraPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(
@@ -51,30 +48,24 @@ fun ScannerScreen(
         )
     }
 
-
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         hasCameraPermission = isGranted
     }
 
-
-    // Richiede il permesso all'avvio se non è già stato concesso
     LaunchedEffect(Unit) {
         if (!hasCameraPermission) {
             permissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 
-
-    // Trigger di navigazione legato allo stato
     LaunchedEffect(uiState) {
         if (uiState is ScannerUiState.Success) {
             onScanSuccess()
             onResetScanner()
         }
     }
-
 
     Scaffold { paddingValues ->
         Box(
@@ -94,7 +85,6 @@ fun ScannerScreen(
                 )
             }
 
-
             if (uiState is ScannerUiState.Error) {
                 Snackbar(
                     modifier = Modifier
@@ -108,68 +98,71 @@ fun ScannerScreen(
     }
 }
 
-
 @Composable
 private fun CameraPreview(onQrCodeScanned: (String) -> Unit) {
-    val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
+    // 1. Isolamento del thread: viene creato una sola volta per l'intero ciclo di vita del Composable
+    val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+
+    // 2. Prevenzione Memory Leak: chiusura esplicita del thread quando si esce dalla schermata
+    DisposableEffect(Unit) {
+        onDispose {
+            cameraExecutor.shutdown()
+        }
+    }
 
     AndroidView(
+        // 3. Spostamento del binding in `factory`: eseguito solo all'inizializzazione, non ad ogni ricomposizione
         factory = { ctx ->
             PreviewView(ctx).apply {
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT
                 )
-                // Assicura stabilità di rendering tra Compose e CameraX
                 implementationMode = PreviewView.ImplementationMode.COMPATIBLE
-            }
-        },
-        modifier = Modifier.fillMaxSize(),
-        update = { previewView ->
-            val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
-            cameraProviderFuture.addListener({
-                val cameraProvider = cameraProviderFuture.get()
-                val preview = Preview.Builder().build().also {
-                    it.surfaceProvider = previewView.surfaceProvider
-                }
 
-
-                val imageAnalyzer = ImageAnalysis.Builder()
-                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                    .build()
-                    .also {
-                        it.setAnalyzer(
-                            Executors.newSingleThreadExecutor(),
-                            QrCodeAnalyzer(onQrCodeScanned)
-                        )
+                val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
+                cameraProviderFuture.addListener({
+                    val cameraProvider = cameraProviderFuture.get()
+                    val preview = Preview.Builder().build().also {
+                        it.surfaceProvider = this.surfaceProvider
                     }
 
+                    val imageAnalyzer = ImageAnalysis.Builder()
+                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .build()
+                        .also {
+                            it.setAnalyzer(
+                                cameraExecutor,
+                                QrCodeAnalyzer(onQrCodeScanned)
+                            )
+                        }
 
-                try {
-                    cameraProvider.unbindAll()
-                    cameraProvider.bindToLifecycle(
-                        lifecycleOwner,
-                        CameraSelector.DEFAULT_BACK_CAMERA,
-                        preview,
-                        imageAnalyzer
-                    )
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }, ContextCompat.getMainExecutor(context))
-        }
+                    try {
+                        cameraProvider.unbindAll()
+                        cameraProvider.bindToLifecycle(
+                            lifecycleOwner,
+                            CameraSelector.DEFAULT_BACK_CAMERA,
+                            preview,
+                            imageAnalyzer
+                        )
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }, ContextCompat.getMainExecutor(ctx))
+            }
+        },
+        modifier = Modifier.fillMaxSize()
     )
 }
-
 
 @Composable
 private fun ScannerOverlay() {
     Box(
         modifier = Modifier
             .size(250.dp)
-            .semantics { contentDescription = "Inquadra il QR Code" },
+            .semantics { contentDescription = "Area di inquadratura del QR Code" },
         contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator(
@@ -180,17 +173,14 @@ private fun ScannerOverlay() {
     }
 }
 
-
 private class QrCodeAnalyzer(
     private val onQrCodeScanned: (String) -> Unit
 ) : ImageAnalysis.Analyzer {
 
-    // Ottimizzato per cercare esclusivamente QR Code
     private val options = BarcodeScannerOptions.Builder()
         .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
         .build()
     private val scanner = BarcodeScanning.getClient(options)
-
 
     @androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
     override fun analyze(imageProxy: ImageProxy) {
@@ -201,11 +191,9 @@ private class QrCodeAnalyzer(
                 .addOnSuccessListener { barcodes ->
                     barcodes.firstOrNull()?.rawValue?.let { onQrCodeScanned(it) }
                 }
-                .addOnCompleteListener { imageProxy.close() } // Indispensabile chiudere il proxy
+                .addOnCompleteListener { imageProxy.close() }
         } else {
             imageProxy.close()
         }
     }
 }
-
-

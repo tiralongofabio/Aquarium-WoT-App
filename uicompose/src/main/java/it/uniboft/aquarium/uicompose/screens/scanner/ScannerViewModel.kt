@@ -29,22 +29,27 @@ class ScannerViewModel @Inject constructor(
 ) : ViewModel() {
 
 
+    // Best Practice: estrazione delle chiavi stringa per evitare Typo
+    companion object {
+        private const val KEY_ID_APPARATO = "idApparato"
+        private const val KEY_TOTP_SECRET = "totpSecret"
+    }
+
+
     private val _uiState = MutableStateFlow<ScannerUiState>(ScannerUiState.Idle)
     val uiState: StateFlow<ScannerUiState> = _uiState.asStateFlow()
 
 
     fun onQrCodeScanned(rawValue: String) {
-        // Previene elaborazioni multiple se il QR viene inquadrato ripetutamente
         if (_uiState.value is ScannerUiState.Success) return
 
 
-        // Avvia la coroutine per gestire l'operazione di I/O (Main-Safe)
         viewModelScope.launch {
             try {
                 val json = JSONObject(rawValue)
                 val config = ApparatoConfig(
-                    idApparato = json.getString("idApparato"),
-                    totpSecret = json.getString("totpSecret")
+                    idApparato = json.getString(KEY_ID_APPARATO),
+                    totpSecret = json.getString(KEY_TOTP_SECRET)
                 )
 
 
@@ -58,10 +63,8 @@ class ScannerViewModel @Inject constructor(
 
 
             } catch (e: JSONException) {
-                // Cattura errori di formato JSON mancante o chiavi errate
                 _uiState.update { ScannerUiState.Error("QR Code non compatibile.") }
             } catch (e: Exception) {
-                // Cattura eventuali eccezioni generiche, utilizzando il parametro 'e'
                 _uiState.update { ScannerUiState.Error("Errore imprevisto: ${e.message}") }
             }
         }
@@ -72,5 +75,3 @@ class ScannerViewModel @Inject constructor(
         _uiState.update { ScannerUiState.Idle }
     }
 }
-
-
