@@ -7,14 +7,13 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import it.uniboft.aquarium.data.remote.api.WotHttpApi
 import it.uniboft.aquarium.data.remote.interceptors.TotpAuthInterceptor
+import it.uniboft.aquarium.data.utils.HardwareUtils
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
-
-
 
 
 @Module
@@ -24,16 +23,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(
-        totpAuthInterceptor: TotpAuthInterceptor
-    ): OkHttpClient {
+    fun provideOkHttpClient(totpAuthInterceptor: TotpAuthInterceptor): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
-
-
         return OkHttpClient.Builder()
-            // L'ordine degli interceptor è rilevante: prima aggiungiamo l'auth, poi loggiamo
             .addInterceptor(totpAuthInterceptor)
             .addInterceptor(loggingInterceptor)
             .connectTimeout(15, TimeUnit.SECONDS)
@@ -46,15 +40,21 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
+        // Routing della connessione HTTP in base all'hardware
+        val baseUrl = if (HardwareUtils.isEmulator()) {
+            "http://10.0.2.2:8080/"
+        } else {
+            // INSERISCI QUI L'IP LOCALE DEL TUO PC
+            "http://192.168.1.66:8080/"
+        }
+
+
         return Retrofit.Builder()
-            // 10.0.2.2 è il localhost della macchina fisica visto dall'emulatore Android.
-            // 8080 è la porta su cui "node-wot" espone le Thing in app.ts.
-            .baseUrl("http://10.0.2.2:8080/")
+            .baseUrl(baseUrl)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
-
 
 
     @Provides
