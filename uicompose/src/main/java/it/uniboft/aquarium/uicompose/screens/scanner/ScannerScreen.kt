@@ -1,17 +1,24 @@
 package it.uniboft.aquarium.uicompose.screens.scanner
 
+
 import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
-import android.view.ViewGroup
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,178 +29,212 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.google.mlkit.vision.barcode.BarcodeScannerOptions
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.mlkit.vision.barcode.BarcodeScanning
-import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
-import java.util.concurrent.Executors
 
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScannerScreen(
-    uiState: ScannerUiState,
-    onQrCodeScanned: (String) -> Unit,
-    onResetScanner: () -> Unit,
-    onScanSuccess: () -> Unit
+    onNavigateBack: () -> Unit,
+    onScanSuccess: () -> Unit,
+    viewModel: ScannerViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val activity = context as? Activity
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+
 
     var hasCameraPermission by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.CAMERA
-            ) == PackageManager.PERMISSION_GRANTED
-        )
+        mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
     }
+
+
+    var showRationale by remember {
+        mutableStateOf(activity?.let { ActivityCompat.shouldShowRequestPermissionRationale(it, Manifest.permission.CAMERA) } ?: false)
+    }
+
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         hasCameraPermission = isGranted
+        showRationale = activity?.let { ActivityCompat.shouldShowRequestPermissionRationale(it, Manifest.permission.CAMERA) } ?: false
     }
 
-    LaunchedEffect(Unit) {
-        if (!hasCameraPermission) {
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                hasCameraPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+
+    LaunchedEffect(hasCameraPermission) {
+        if (!hasCameraPermission && !showRationale) {
             permissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 
-    LaunchedEffect(uiState) {
-        if (uiState is ScannerUiState.Success) {
+
+    LaunchedEffect(uiState.isScanSuccessful) {
+        if (uiState.isScanSuccessful) {
             onScanSuccess()
-            onResetScanner()
+            viewModel.navigationHandled()
         }
     }
 
-    Scaffold { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentAlignment = Alignment.Center
-        ) {
-            if (hasCameraPermission) {
-                CameraPreview(onQrCodeScanned = onQrCodeScanned)
-                ScannerOverlay()
-            } else {
-                Text(
-                    text = "Permesso fotocamera necessario per inquadrare il QR Code dell'acquario.",
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
 
-            if (uiState is ScannerUiState.Error) {
-                Snackbar(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(16.dp)
-                ) {
-                    Text(uiState.message)
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.resetError()
+        }
+    }
+
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Aggiungi Dispositivo") },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Torna indietro")
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+            when {
+                hasCameraPermission -> {
+                    CameraPreviewView(
+                        onBarcodeScanned = { barcode -> viewModel.onQrCodeScanned(barcode) }
+                    )
+                }
+                showRationale -> {
+                    PermissionExplanationUI(
+                        message = "La fotocamera è necessaria per inquadrare e leggere il QR-Code del nuovo apparato WoT.",
+                        buttonText = "Concedi Permesso",
+                        onButtonClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }
+                    )
+                }
+                else -> {
+                    PermissionExplanationUI(
+                        message = "Permesso fotocamera negato. Per aggiungere un dispositivo, devi abilitarlo dalle impostazioni.",
+                        buttonText = "Apri Impostazioni",
+                        onButtonClick = { context.openAppSettings() }
+                    )
                 }
             }
         }
     }
 }
 
+
+@androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
 @Composable
-private fun CameraPreview(onQrCodeScanned: (String) -> Unit) {
+private fun CameraPreviewView(onBarcodeScanned: (String) -> Unit) {
+    val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
 
-    // 1. Isolamento del thread: viene creato una sola volta per l'intero ciclo di vita del Composable
-    val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
-
-    // 2. Prevenzione Memory Leak: chiusura esplicita del thread quando si esce dalla schermata
-    DisposableEffect(Unit) {
-        onDispose {
-            cameraExecutor.shutdown()
-        }
-    }
 
     AndroidView(
-        // 3. Spostamento del binding in `factory`: eseguito solo all'inizializzazione, non ad ogni ricomposizione
         factory = { ctx ->
-            PreviewView(ctx).apply {
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
-                implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+            val previewView = PreviewView(ctx)
+            val executor = ContextCompat.getMainExecutor(ctx)
 
-                val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-                cameraProviderFuture.addListener({
-                    val cameraProvider = cameraProviderFuture.get()
-                    val preview = Preview.Builder().build().also {
-                        it.surfaceProvider = this.surfaceProvider
+
+            cameraProviderFuture.addListener({
+                val cameraProvider = cameraProviderFuture.get()
+
+                val preview = Preview.Builder().build().also {
+                    @Suppress("UsePropertyAccessSyntax")
+                    it.setSurfaceProvider(previewView.surfaceProvider)
+                }
+
+
+                val barcodeScanner = BarcodeScanning.getClient()
+                val imageAnalysis = ImageAnalysis.Builder()
+                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .build()
+
+
+                imageAnalysis.setAnalyzer(executor) { imageProxy ->
+                    val mediaImage = imageProxy.image
+                    if (mediaImage != null) {
+                        val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+                        barcodeScanner.process(image)
+                            .addOnSuccessListener { barcodes ->
+                                for (barcode in barcodes) {
+                                    barcode.rawValue?.let { value ->
+                                        onBarcodeScanned(value)
+                                    }
+                                }
+                            }
+                            .addOnCompleteListener {
+                                imageProxy.close()
+                            }
+                    } else {
+                        imageProxy.close()
                     }
+                }
 
-                    val imageAnalyzer = ImageAnalysis.Builder()
-                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                        .build()
-                        .also {
-                            it.setAnalyzer(
-                                cameraExecutor,
-                                QrCodeAnalyzer(onQrCodeScanned)
-                            )
-                        }
 
-                    try {
-                        cameraProvider.unbindAll()
-                        cameraProvider.bindToLifecycle(
-                            lifecycleOwner,
-                            CameraSelector.DEFAULT_BACK_CAMERA,
-                            preview,
-                            imageAnalyzer
-                        )
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }, ContextCompat.getMainExecutor(ctx))
-            }
+                val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+
+
+                try {
+                    cameraProvider.unbindAll()
+                    cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageAnalysis)
+                } catch (e: Exception) {
+                    // Ignorato se fotocamera assente
+                }
+            }, executor)
+            previewView
         },
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize().semantics { contentDescription = "Fotocamera attiva. Inquadra il QR Code" }
     )
 }
 
+
 @Composable
-private fun ScannerOverlay() {
-    Box(
-        modifier = Modifier
-            .size(250.dp)
-            .semantics { contentDescription = "Area di inquadratura del QR Code" },
-        contentAlignment = Alignment.Center
+private fun PermissionExplanationUI(message: String, buttonText: String, onButtonClick: () -> Unit) {
+    Column(
+        modifier = Modifier.padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        CircularProgressIndicator(
-            modifier = Modifier.size(64.dp),
-            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-            strokeWidth = 2.dp
-        )
+        Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
+        Text(text = message, textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
+        Button(
+            onClick = onButtonClick,
+            modifier = Modifier.semantics { contentDescription = buttonText }
+        ) {
+            Text(buttonText)
+        }
     }
 }
 
-private class QrCodeAnalyzer(
-    private val onQrCodeScanned: (String) -> Unit
-) : ImageAnalysis.Analyzer {
 
-    private val options = BarcodeScannerOptions.Builder()
-        .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
-        .build()
-    private val scanner = BarcodeScanning.getClient(options)
-
-    @androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
-    override fun analyze(imageProxy: ImageProxy) {
-        val mediaImage = imageProxy.image
-        if (mediaImage != null) {
-            val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-            scanner.process(image)
-                .addOnSuccessListener { barcodes ->
-                    barcodes.firstOrNull()?.rawValue?.let { onQrCodeScanned(it) }
-                }
-                .addOnCompleteListener { imageProxy.close() }
-        } else {
-            imageProxy.close()
-        }
+private fun Context.openAppSettings() {
+    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+        data = Uri.fromParts("package", packageName, null)
+        startActivity(this)
     }
 }

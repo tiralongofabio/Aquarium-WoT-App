@@ -16,11 +16,10 @@ import org.json.JSONObject
 import javax.inject.Inject
 
 
-sealed class ScannerUiState {
-    data object Idle : ScannerUiState()
-    data object Success : ScannerUiState()
-    data class Error(val message: String) : ScannerUiState()
-}
+data class ScannerUiState(
+    val isScanSuccessful: Boolean = false,
+    val errorMessage: String? = null
+)
 
 
 @HiltViewModel
@@ -29,19 +28,18 @@ class ScannerViewModel @Inject constructor(
 ) : ViewModel() {
 
 
-    // Best Practice: estrazione delle chiavi stringa per evitare Typo
     companion object {
         private const val KEY_ID_APPARATO = "idApparato"
         private const val KEY_TOTP_SECRET = "totpSecret"
     }
 
 
-    private val _uiState = MutableStateFlow<ScannerUiState>(ScannerUiState.Idle)
+    private val _uiState = MutableStateFlow(ScannerUiState())
     val uiState: StateFlow<ScannerUiState> = _uiState.asStateFlow()
 
 
     fun onQrCodeScanned(rawValue: String) {
-        if (_uiState.value is ScannerUiState.Success) return
+        if (_uiState.value.isScanSuccessful) return
 
 
         viewModelScope.launch {
@@ -55,23 +53,28 @@ class ScannerViewModel @Inject constructor(
 
                 saveDeviceConfigUseCase.execute(config)
                     .onSuccess {
-                        _uiState.update { ScannerUiState.Success }
+                        _uiState.update { it.copy(isScanSuccessful = true, errorMessage = null) }
                     }
                     .onFailure { e ->
-                        _uiState.update { ScannerUiState.Error("Errore di salvataggio: ${e.message}") }
+                        _uiState.update { it.copy(errorMessage = "Errore di salvataggio: ${e.message}") }
                     }
 
 
             } catch (e: JSONException) {
-                _uiState.update { ScannerUiState.Error("QR Code non compatibile.") }
+                _uiState.update { it.copy(errorMessage = "QR Code non compatibile.") }
             } catch (e: Exception) {
-                _uiState.update { ScannerUiState.Error("Errore imprevisto: ${e.message}") }
+                _uiState.update { it.copy(errorMessage = "Errore imprevisto: ${e.message}") }
             }
         }
     }
 
 
-    fun resetScanner() {
-        _uiState.update { ScannerUiState.Idle }
+    fun resetError() {
+        _uiState.update { it.copy(errorMessage = null) }
+    }
+
+
+    fun navigationHandled() {
+        _uiState.update { it.copy(isScanSuccessful = false) }
     }
 }

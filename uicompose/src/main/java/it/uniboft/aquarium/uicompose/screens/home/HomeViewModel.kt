@@ -1,5 +1,6 @@
 package it.uniboft.aquarium.uicompose.screens.home
 
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,6 +24,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
 
+
 data class HomeUiState(
     val isLoading: Boolean = false,
     val waterQuality: WaterQuality = WaterQuality.Neutral,
@@ -30,9 +32,10 @@ data class HomeUiState(
     val pumpSpeed: Int = 0,
     val filterHealth: Double = 100.0,
     val isCleaning: Boolean = false,
-    val isConnectionUnstable: Boolean = false, // Guida la visibilità del banner persistente
+    val isConnectionUnstable: Boolean = false,
     val errorMessage: String? = null
 )
+
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -42,8 +45,10 @@ class HomeViewModel @Inject constructor(
     localRepository: ILocalRepository
 ) : ViewModel() {
 
+
     private val _internalState = MutableStateFlow(HomeUiState())
 
+    // Single Source of Truth (SSOT): Il DB guida la UI per i sensori
     val uiState: StateFlow<HomeUiState> = _internalState
         .combine(localRepository.getWaterQualityStream()) { state, localWaterQuality ->
             state.copy(waterQuality = localWaterQuality ?: WaterQuality.Neutral)
@@ -54,11 +59,12 @@ class HomeViewModel @Inject constructor(
             initialValue = HomeUiState()
         )
 
+
     private var pollingJob: Job? = null
-    private var failedAttempts = 0 // Contatore per determinare l'instabilità
+    private var failedAttempts = 0
 
-    init { startPolling() }
 
+    // Lifecycle-aware: chiamato da HomeScreen quando OnTop
     fun startPolling() {
         if (pollingJob?.isActive == true) return
         pollingJob = viewModelScope.launch {
@@ -69,21 +75,26 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun stopPolling() { pollingJob?.cancel() }
 
-    // Chiamato dalla UI quando l'utente fa Pull-to-Refresh
+    fun stopPolling() {
+        pollingJob?.cancel()
+        pollingJob = null
+    }
+
+
     fun manualRefresh() {
         viewModelScope.launch {
             syncData(isSilent = false)
         }
     }
 
+
     private suspend fun syncData(isSilent: Boolean) {
         if (!isSilent) {
             _internalState.update { it.copy(isLoading = true, errorMessage = null) }
         }
 
-        // coroutineScope fornisce il contesto necessario per usare async in modo sicuro
+
         coroutineScope {
             val sensorDeferred = async { syncWotDataUseCase.execute() }
             val pumpDeferred = async { wotRepository.fetchPumpState() }
@@ -91,32 +102,28 @@ class HomeViewModel @Inject constructor(
             val sensorResult = sensorDeferred.await()
             val pumpResult = pumpDeferred.await()
 
-            // Usiamo fold innestato per aggirare ogni potenziale problema dell'IDE
-            // con l'inferenza di tipo delle inline class (come kotlin.Result)
-            sensorResult.fold(
-                onSuccess = {
-                    pumpResult.fold(
-                        onSuccess = { pumpState ->
-                            // RESET: Connessione stabile ripristinata
-                            failedAttempts = 0
-                            _internalState.update {
-                                it.copy(
-                                    isLoading = false,
-                                    isConnectionUnstable = false,
-                                    isPumpRunning = pumpState.isRunning,
-                                    pumpSpeed = pumpState.speed,
-                                    filterHealth = pumpState.filterHealth,
-                                    isCleaning = pumpState.isCleaning
-                                )
-                            }
-                        },
-                        onFailure = { handleOfflineState(isSilent) }
+
+            // Best Practice: logica appiattita, nessun "nested fold"
+            if (sensorResult.isSuccess && pumpResult.isSuccess) {
+                val pumpState = pumpResult.getOrNull()!!
+                failedAttempts = 0 // Reset fallimenti
+
+                _internalState.update {
+                    it.copy(
+                        isLoading = false,
+                        isConnectionUnstable = false,
+                        isPumpRunning = pumpState.isRunning,
+                        pumpSpeed = pumpState.speed,
+                        filterHealth = pumpState.filterHealth,
+                        isCleaning = pumpState.isCleaning
                     )
-                },
-                onFailure = { handleOfflineState(isSilent) }
-            )
+                }
+            } else {
+                handleOfflineState(isSilent)
+            }
         }
     }
+
 
     private fun handleOfflineState(isSilent: Boolean) {
         failedAttempts++
@@ -126,11 +133,11 @@ class HomeViewModel @Inject constructor(
             it.copy(
                 isLoading = false,
                 isConnectionUnstable = isUnstable,
-                // Mostra il toast/snackbar solo se l'utente ha forzato il refresh o prima che diventi persistente
                 errorMessage = if (!isSilent && !isUnstable) "Tentativo fallito ($failedAttempts/3)..." else null
             )
         }
     }
+
 
     fun togglePump(isRunning: Boolean) {
         _internalState.update { it.copy(isPumpRunning = isRunning, pumpSpeed = if (isRunning) 70 else 0) }
@@ -141,6 +148,7 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+
     fun startCleaning() {
         _internalState.update { it.copy(isCleaning = true) }
         viewModelScope.launch {
@@ -150,9 +158,8 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun errorShown() { _internalState.update { it.copy(errorMessage = null) } }
+
+    fun errorShown() {
+        _internalState.update { it.copy(errorMessage = null) }
+    }
 }
-
-
-
-

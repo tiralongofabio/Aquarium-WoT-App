@@ -1,6 +1,7 @@
 package it.uniboft.aquarium.uicompose.screens.home
 
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
@@ -19,7 +20,6 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import it.uniboft.aquarium.domain.models.WaterQuality
 import java.util.Locale
-import androidx.compose.animation.AnimatedVisibility
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -73,9 +73,7 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-        )
-         {
-            // Verifica contro il default Neutro anziché contro null
+        ) {
             if (uiState.waterQuality == WaterQuality.Neutral && uiState.isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(
@@ -89,7 +87,6 @@ fun HomeScreen(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Banner persistente: appare al 3° fallimento, sparisce al 1° successo
                     AnimatedVisibility(visible = uiState.isConnectionUnstable) {
                         Card(
                             colors = CardDefaults.cardColors(
@@ -105,28 +102,21 @@ fun HomeScreen(
                             )
                         }
                     }
-
-
                     WaterQualitySensors(waterQuality = uiState.waterQuality)
-
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
                     PumpControlCard(
                         isPumpRunning = uiState.isPumpRunning,
                         pumpSpeed = uiState.pumpSpeed,
                         onToggle = viewModel::togglePump
                     )
-
                     FilterHealthCard(
                         health = uiState.filterHealth,
                         isCleaning = uiState.isCleaning,
                         onStartCleaning = viewModel::startCleaning
                     )
                 }
-
             }
         }
-
     }
 }
 
@@ -136,7 +126,6 @@ private fun WaterQualitySensors(waterQuality: WaterQuality) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         SensorCard(
             title = "Temp",
-            // Formattazione rigorosa per evitare i Double estesi
             value = String.format(Locale.US, "%.1f °C", waterQuality.temperature),
             modifier = Modifier.weight(1f)
         )
@@ -170,7 +159,6 @@ private fun PumpControlCard(isPumpRunning: Boolean, pumpSpeed: Int, onToggle: (B
             Column {
                 Text(text = "Pompa Filtro", style = MaterialTheme.typography.titleLarge)
                 Text(
-                    // Mostra l'effettiva velocità in tempo reale
                     text = if (isPumpRunning) "Attiva ($pumpSpeed%)" else "Spenta",
                     style = MaterialTheme.typography.bodyMedium
                 )
@@ -210,7 +198,6 @@ private fun FilterHealthCard(health: Double, isCleaning: Boolean, onStartCleanin
 }
 
 
-
 @Composable
 private fun SensorCard(title: String, value: String, modifier: Modifier = Modifier) {
     Card(modifier = modifier) {
@@ -221,42 +208,6 @@ private fun SensorCard(title: String, value: String, modifier: Modifier = Modifi
             Text(text = title, style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = value, style = MaterialTheme.typography.bodyLarge)
-        }
-    }
-}
-
-
-@Composable
-private fun PumpControlCard(isPumpRunning: Boolean, onToggle: (Boolean) -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isPumpRunning) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-                .semantics(mergeDescendants = true) {},
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column {
-                Text(text = "Pompa Filtro", style = MaterialTheme.typography.titleLarge)
-                Text(
-                    text = if (isPumpRunning) "Attiva" else "Spenta",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-            Switch(
-                checked = isPumpRunning,
-                onCheckedChange = onToggle,
-                modifier = Modifier.semantics {
-                    contentDescription = "Interruttore pompa filtro"
-                    role = Role.Switch
-                }
-            )
         }
     }
 }
