@@ -3,9 +3,31 @@
     xmlns:tools="http://schemas.android.com/tools">
 
 
+    <!-- Permessi Generali -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+
+
+    <!-- ======================================================= -->
+    <!-- PERMESSI BLUETOOTH LOW ENERGY (BLE)                     -->
+    <!-- ======================================================= -->
+
+    <!-- Dispositivi Legacy (Android 11 o inferiori - API <= 30) -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="30" />
+
+
+    <!-- Dispositivi Moderni (Android 12+ - API >= 31) -->
+    <!-- neverForLocation esenta l'app dal dover chiedere il permesso di localizzazione -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
+
+    <!-- Indica che il BLE è supportato ma NON strettamente obbligatorio per installare l'app -->
+    <!-- (Garantisce che l'app continui a installarsi e funzionare sull'emulatore) -->
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
 
 
     <application
