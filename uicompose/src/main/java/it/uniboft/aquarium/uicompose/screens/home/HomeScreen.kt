@@ -3,6 +3,8 @@ package it.uniboft.aquarium.uicompose.screens.home
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -84,6 +86,7 @@ fun HomeScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .verticalScroll(rememberScrollState()) // Aggiunto scroll per layout landscape
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
@@ -179,19 +182,25 @@ private fun PumpControlCard(isPumpRunning: Boolean, pumpSpeed: Int, onToggle: (B
 @Composable
 private fun FilterHealthCard(health: Double, isCleaning: Boolean, onStartCleaning: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text(text = "Salute Filtro: ${String.format(Locale.US, "%.0f", health)}%", style = MaterialTheme.typography.titleMedium)
-            LinearProgressIndicator(
-                progress = { (health / 100).toFloat() },
+            // Progress bar e bottone in linea (Row) per ottimizzare lo spazio orizzontale
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                color = if (health > 30) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-            )
-            Button(
-                onClick = onStartCleaning,
-                enabled = !isCleaning,
-                modifier = Modifier.align(Alignment.End).padding(top = 8.dp)
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(if (isCleaning) "Pulizia in corso..." else "Avvia Pulizia")
+                LinearProgressIndicator(
+                    progress = { (health / 100).toFloat() },
+                    modifier = Modifier.weight(1f),
+                    color = if (health > 30) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                )
+                Button(
+                    onClick = onStartCleaning,
+                    enabled = !isCleaning
+                ) {
+                    Text(if (isCleaning) "Pulizia..." else "Avvia")
+                }
             }
         }
     }
