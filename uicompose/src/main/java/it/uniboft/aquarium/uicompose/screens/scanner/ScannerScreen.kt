@@ -64,11 +64,18 @@ fun ScannerScreen(
     }
 
 
+    // Flag per eliminare i flash visivi
+    var isRequestingPermission by remember { mutableStateOf(false) }
+    var hasAttemptedRequest by remember { mutableStateOf(false) }
+
+
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         hasCameraPermission = isGranted
         showRationale = activity?.let { ActivityCompat.shouldShowRequestPermissionRationale(it, Manifest.permission.CAMERA) } ?: false
+        isRequestingPermission = false
+        hasAttemptedRequest = true
     }
 
 
@@ -84,7 +91,8 @@ fun ScannerScreen(
 
 
     LaunchedEffect(hasCameraPermission) {
-        if (!hasCameraPermission && !showRationale) {
+        if (!hasCameraPermission && !showRationale && !hasAttemptedRequest) {
+            isRequestingPermission = true
             permissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
@@ -126,11 +134,20 @@ fun ScannerScreen(
                         onBarcodeScanned = { barcode -> viewModel.onQrCodeScanned(barcode) }
                     )
                 }
+                // Mostra un caricatore neutro finché l'OS sta gestendo la dialog o stiamo avviando la richiesta
+                isRequestingPermission || (!hasAttemptedRequest && !showRationale) -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.semantics { contentDescription = "Richiesta permesso in corso" }
+                    )
+                }
                 showRationale -> {
                     PermissionExplanationUI(
                         message = "La fotocamera è necessaria per inquadrare e leggere il QR-Code del nuovo apparato WoT.",
                         buttonText = "Concedi Permesso",
-                        onButtonClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }
+                        onButtonClick = {
+                            isRequestingPermission = true
+                            permissionLauncher.launch(Manifest.permission.CAMERA)
+                        }
                     )
                 }
                 else -> {
@@ -203,7 +220,7 @@ private fun CameraPreviewView(onBarcodeScanned: (String) -> Unit) {
                     cameraProvider.unbindAll()
                     cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageAnalysis)
                 } catch (e: Exception) {
-                    // Ignorato se fotocamera assente
+                    e.printStackTrace()
                 }
             }, executor)
             previewView
