@@ -68,12 +68,19 @@ class AquariumMonitorService : Service() {
         if (result.isSuccess) {
             val data = result.getOrNull()!!
 
-            // Logica semplificata: da sostituire con la lettura dei Range Configurati
-            if (data.ph < 6.5 || data.ph > 7.5) {
-                registerAndNotify("pH Anomalo", "Valore attuale: ${data.ph}", data.ph)
-            }
+            // CONDIZIONE REALE (commentata per il test)
+            // if (data.ph < 6.5 || data.ph > 7.5) { ... }  // da completare e correggere
+
+
+            // TEST: Scriviamo a DB una notifica fittizia ogni volta che il servizio legge i dati
+            registerAndNotify(
+                param = "pH (Test Mode)",
+                msg = "Valore letto: ${data.ph}",
+                value = data.ph
+            )
         }
     }
+
 
 
     private suspend fun registerAndNotify(param: String, msg: String, value: Double) {
