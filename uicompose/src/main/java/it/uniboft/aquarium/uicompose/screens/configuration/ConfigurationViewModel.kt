@@ -1,11 +1,13 @@
 package it.uniboft.aquarium.uicompose.screens.configuration
 
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import it.uniboft.aquarium.domain.models.RangeBounds
 import it.uniboft.aquarium.domain.models.SensorConfig
 import it.uniboft.aquarium.domain.repositories.IWotRepository
+import it.uniboft.aquarium.domain.usecases.ResetSensorConfigUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,7 +27,8 @@ data class ConfigurationUiState(
 
 @HiltViewModel
 class ConfigurationViewModel @Inject constructor(
-    private val wotRepository: IWotRepository
+    private val wotRepository: IWotRepository,
+    private val resetSensorConfigUseCase: ResetSensorConfigUseCase
 ) : ViewModel() {
 
 
@@ -53,7 +56,6 @@ class ConfigurationViewModel @Inject constructor(
     }
 
 
-    // Aggiorna lo stato locale mentre l'utente muove gli slider
     fun updateOptimalRange(paramKey: String, min: Double, max: Double) {
         val currentConfig = _uiState.value.config ?: return
         val updatedParameters = currentConfig.parameters.toMutableMap()
@@ -61,10 +63,7 @@ class ConfigurationViewModel @Inject constructor(
 
 
         updatedParameters[paramKey] = currentParam.copy(optimal = RangeBounds(min, max))
-
-        _uiState.update {
-            it.copy(config = currentConfig.copy(parameters = updatedParameters))
-        }
+        _uiState.update { it.copy(config = currentConfig.copy(parameters = updatedParameters)) }
     }
 
 
@@ -81,6 +80,21 @@ class ConfigurationViewModel @Inject constructor(
             wotRepository.updateSensorConfig(currentConfig).fold(
                 onSuccess = {
                     _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
+                },
+                onFailure = { error ->
+                    _uiState.update { it.copy(isSaving = false, errorMessage = error.localizedMessage) }
+                }
+            )
+        }
+    }
+
+
+    fun resetToDefaults() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSaving = true, errorMessage = null, saveSuccess = false) }
+            resetSensorConfigUseCase.execute().fold(
+                onSuccess = { newConfig ->
+                    _uiState.update { it.copy(isSaving = false, saveSuccess = true, config = newConfig) }
                 },
                 onFailure = { error ->
                     _uiState.update { it.copy(isSaving = false, errorMessage = error.localizedMessage) }

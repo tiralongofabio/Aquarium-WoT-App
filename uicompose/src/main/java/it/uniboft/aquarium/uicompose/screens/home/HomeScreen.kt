@@ -86,7 +86,7 @@ fun HomeScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .verticalScroll(rememberScrollState()) // Aggiunto scroll per layout landscape
+                        .verticalScroll(rememberScrollState())
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
@@ -184,7 +184,6 @@ private fun FilterHealthCard(health: Double, isCleaning: Boolean, onStartCleanin
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text(text = "Salute Filtro: ${String.format(Locale.US, "%.0f", health)}%", style = MaterialTheme.typography.titleMedium)
-            // Progress bar e bottone in linea (Row) per ottimizzare lo spazio orizzontale
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,

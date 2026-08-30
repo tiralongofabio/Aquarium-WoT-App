@@ -1,11 +1,13 @@
 package it.uniboft.aquarium.uicompose.screens.configuration
 
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -84,10 +86,23 @@ fun ConfigurationScreen(
 
                     uiState.config!!.parameters.forEach { (key, paramConfig) ->
                         ParameterSliderCard(
-                            paramKey = key,
                             config = paramConfig,
                             onRangeChanged = { min, max -> viewModel.updateOptimalRange(key, min, max) }
                         )
+                    }
+
+
+                    OutlinedButton(
+                        onClick = viewModel::resetToDefaults,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp, bottom = 24.dp)
+                            .semantics { contentDescription = "Ripristina i valori di default di fabbrica" },
+                        enabled = !uiState.isSaving
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Ripristina Valori di Default")
                     }
                 }
             }
@@ -125,7 +140,6 @@ private fun ModeSelector(currentMode: String, onModeSelected: (String) -> Unit) 
 
 @Composable
 private fun ParameterSliderCard(
-    paramKey: String,
     config: it.uniboft.aquarium.domain.models.ParameterConfig,
     onRangeChanged: (Double, Double) -> Unit
 ) {
@@ -143,7 +157,6 @@ private fun ParameterSliderCard(
             RangeSlider(
                 value = config.optimal.min.toFloat()..config.optimal.max.toFloat(),
                 onValueChange = { range ->
-                    // Arrotonda al decimo per evitare valori floating point lunghissimi
                     val min = Math.round(range.start * 10.0) / 10.0
                     val max = Math.round(range.endInclusive * 10.0) / 10.0
                     onRangeChanged(min, max)
