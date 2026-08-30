@@ -11,12 +11,17 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
+import it.uniboft.aquarium.data.local.dao.AlertDao
+import it.uniboft.aquarium.domain.models.Alert
+
 
 
 class LocalRepositoryImpl @Inject constructor(
     private val wotDao: WotDao,
+    private val alertDao: AlertDao, // Inietta l'AlertDao
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ILocalRepository {
+
 
 
     override fun getWaterQualityStream(): Flow<WaterQuality> {
@@ -36,5 +41,11 @@ class LocalRepositoryImpl @Inject constructor(
             temperature = data.temperature
         )
         wotDao.insertOrUpdate(entity)
+    }
+
+    override fun getAlertsStream(): Flow<List<Alert>> {
+        return alertDao.getAlertsStream().map { entities ->
+            entities.map { it.toDomain() }
+        }
     }
 }

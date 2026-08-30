@@ -4,7 +4,15 @@
 
 
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"
+        tools:ignore="ForegroundServicesPolicy" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+
     <uses-feature android:name="android.hardware.camera" android:required="true" />
+
 
 
     <application
@@ -18,9 +26,17 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AquariumWoTApp"
         android:networkSecurityConfig="@xml/network_security_config"
+
         tools:targetApi="31">
 
-        <activity
+        <!-- Servizio in background continuo -->
+        <service
+            android:name="it.uniboft.aquarium.data.services.AquariumMonitorService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
+
+
+    <activity
             android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.AquariumWoTApp">

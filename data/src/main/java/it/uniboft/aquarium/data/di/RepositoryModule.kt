@@ -5,6 +5,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import it.uniboft.aquarium.data.local.dao.AlertDao
 import it.uniboft.aquarium.data.local.dao.WotDao
 import it.uniboft.aquarium.data.remote.api.WotHttpApi
 import it.uniboft.aquarium.data.repositories.HttpRepositoryImpl
@@ -26,10 +27,13 @@ object RepositoryModule {
     @Singleton
     fun provideLocalRepository(
         wotDao: WotDao,
+        alertDao: AlertDao, // Aggiunto AlertDao
         @IoDispatcher ioDispatcher: CoroutineDispatcher
     ): ILocalRepository {
-        return LocalRepositoryImpl(wotDao, ioDispatcher)
+        // Passa alertDao come secondo parametro
+        return LocalRepositoryImpl(wotDao, alertDao, ioDispatcher)
     }
+
 
 
     @Provides

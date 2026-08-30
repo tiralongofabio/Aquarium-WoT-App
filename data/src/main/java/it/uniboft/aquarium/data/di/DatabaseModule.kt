@@ -8,6 +8,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import it.uniboft.aquarium.data.local.dao.AlertDao
 import it.uniboft.aquarium.data.local.dao.WotDao
 import it.uniboft.aquarium.data.local.db.AppDatabase
 import javax.inject.Singleton
@@ -33,4 +34,10 @@ object DatabaseModule {
     fun provideWotDao(database: AppDatabase): WotDao {
         return database.wotDao()
     }
+
+    @Provides
+    fun provideAlertDao(database: AppDatabase): AlertDao {
+        return database.alertDao()
+    }
+
 }
