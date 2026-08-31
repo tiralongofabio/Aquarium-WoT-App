@@ -1,10 +1,12 @@
 package it.uniboft.aquarium.uicompose.screens.home
 
 
+import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import it.uniboft.aquarium.domain.models.WaterQuality
+import it.uniboft.aquarium.domain.repositories.IBleRepository
 import it.uniboft.aquarium.domain.repositories.ILocalRepository
 import it.uniboft.aquarium.domain.repositories.IWotRepository
 import it.uniboft.aquarium.domain.usecases.SyncWotDataUseCase
@@ -25,6 +27,7 @@ import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
 
 
+
 data class HomeUiState(
     val isLoading: Boolean = false,
     val waterQuality: WaterQuality = WaterQuality.Neutral,
@@ -33,6 +36,7 @@ data class HomeUiState(
     val filterHealth: Double = 100.0,
     val isCleaning: Boolean = false,
     val isConnectionUnstable: Boolean = false,
+    val isBleConnected: Boolean = true, // Default true per l'emulatore
     val errorMessage: String? = null
 )
 
@@ -42,34 +46,46 @@ class HomeViewModel @Inject constructor(
     private val syncWotDataUseCase: SyncWotDataUseCase,
     private val updatePumpStateUseCase: UpdatePumpStateUseCase,
     private val wotRepository: IWotRepository,
+    private val bleRepository: IBleRepository, // Iniezione pulita dell'interfaccia Domain
     localRepository: ILocalRepository
 ) : ViewModel() {
 
 
     private val _internalState = MutableStateFlow(HomeUiState())
 
-    // Single Source of Truth (SSOT): Il DB guida la UI per i sensori
-    val uiState: StateFlow<HomeUiState> = _internalState
-        .combine(localRepository.getWaterQualityStream()) { state, localWaterQuality ->
-            state.copy(waterQuality = localWaterQuality ?: WaterQuality.Neutral)
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = HomeUiState()
+    val uiState: StateFlow<HomeUiState> = combine(
+        _internalState,
+        localRepository.getWaterQualityStream(),
+        bleRepository.connectionState
+    ) { state, localWaterQuality, bleState ->
+        state.copy(
+            waterQuality = localWaterQuality ?: WaterQuality.Neutral,
+            isBleConnected = isEmulator() || bleState
         )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = HomeUiState()
+    )
+
 
 
     private var pollingJob: Job? = null
     private var failedAttempts = 0
 
 
-    // Lifecycle-aware: chiamato da HomeScreen quando OnTop
     fun startPolling() {
+        if (!isEmulator() && !bleRepository.connectionState.value) {
+            bleRepository.startScan()
+        }
+
+
         if (pollingJob?.isActive == true) return
         pollingJob = viewModelScope.launch {
             while (isActive) {
-                syncData(isSilent = true)
+                if (isEmulator() || bleRepository.connectionState.value) {
+                    syncData(isSilent = true)
+                }
                 delay(5.seconds)
             }
         }
@@ -83,9 +99,11 @@ class HomeViewModel @Inject constructor(
 
 
     fun manualRefresh() {
-        viewModelScope.launch {
-            syncData(isSilent = false)
+        if (!isEmulator() && !bleRepository.connectionState.value) {
+            _internalState.update { it.copy(errorMessage = "In attesa della connessione Bluetooth...") }
+            return
         }
+        viewModelScope.launch { syncData(isSilent = false) }
     }
 
 
@@ -103,10 +121,9 @@ class HomeViewModel @Inject constructor(
             val pumpResult = pumpDeferred.await()
 
 
-            // Best Practice: logica appiattita, nessun "nested fold"
             if (sensorResult.isSuccess && pumpResult.isSuccess) {
                 val pumpState = pumpResult.getOrNull()!!
-                failedAttempts = 0 // Reset fallimenti
+                failedAttempts = 0
 
                 _internalState.update {
                     it.copy(
@@ -125,10 +142,21 @@ class HomeViewModel @Inject constructor(
     }
 
 
-    private fun handleOfflineState(isSilent: Boolean) {
+    // Utility isolata per mantenere la UI indipendente dai moduli Data
+    private fun isEmulator(): Boolean {
+        return (Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic"))
+                || Build.FINGERPRINT.startsWith("generic")
+                || Build.FINGERPRINT.startsWith("unknown")
+                || Build.HARDWARE.contains("goldfish")
+                || Build.HARDWARE.contains("ranchu")
+                || Build.MODEL.contains("google_sdk")
+                || Build.MODEL.contains("Emulator")
+    }
+
+
+private fun handleOfflineState(isSilent: Boolean) {
         failedAttempts++
         val isUnstable = failedAttempts >= 3
-
         _internalState.update {
             it.copy(
                 isLoading = false,
@@ -140,6 +168,8 @@ class HomeViewModel @Inject constructor(
 
 
     fun togglePump(isRunning: Boolean) {
+        if (!isEmulator() && !bleRepository.connectionState.value) return
+
         _internalState.update { it.copy(isPumpRunning = isRunning, pumpSpeed = if (isRunning) 70 else 0) }
         viewModelScope.launch {
             updatePumpStateUseCase.execute(isRunning).onFailure { error ->
@@ -150,6 +180,8 @@ class HomeViewModel @Inject constructor(
 
 
     fun startCleaning() {
+        if (!isEmulator() && !bleRepository.connectionState.value) return
+
         _internalState.update { it.copy(isCleaning = true) }
         viewModelScope.launch {
             wotRepository.startCleaningCycle().onFailure { error ->
