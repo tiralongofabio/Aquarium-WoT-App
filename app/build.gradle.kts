@@ -22,6 +22,24 @@ android {
         buildConfig = true
     }
 
+
+    buildTypes {
+        getByName("debug") {
+            isMinifyEnabled = false
+        }
+        getByName("release") {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+
+
+
+
     flavorDimensions.add("environment")
     productFlavors {
         create("emulator") {

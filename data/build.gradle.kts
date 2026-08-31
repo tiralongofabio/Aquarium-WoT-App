@@ -40,7 +40,11 @@ dependencies {
 
     // Networking (Retrofit per chiamate HTTP su Emulatore)
     implementation(libs.retrofit)
-    implementation(libs.retrofit.converter.gson)
+    //implementation(libs.retrofit.converter.gson)
+    implementation(libs.retrofit.converter.moshi)
+    implementation(libs.moshi.kotlin)
+    ksp(libs.moshi.codegen)
+
     implementation(libs.okhttp.logging)
 
     // ML Kit Scanner (Lettura QR Code)
