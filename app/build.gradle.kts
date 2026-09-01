@@ -69,6 +69,7 @@ dependencies {
     implementation(project(":uicompose"))
     implementation(project(":data"))
     implementation(project(":domain"))
+    implementation(libs.androidx.core.splashscreen)
 
 
     // AndroidX Core & Lifecycle

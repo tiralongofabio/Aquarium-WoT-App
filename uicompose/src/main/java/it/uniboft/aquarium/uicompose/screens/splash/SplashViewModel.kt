@@ -37,9 +37,7 @@ class SplashViewModel @Inject constructor(
 
     private fun checkInitialDestination() {
         viewModelScope.launch {
-
-            delay(1.seconds)
-
+            delay(4.seconds) // Modificato per soddisfare il requisito dei 4 secondi
             val isConfigured = checkDeviceConfigUseCase.execute()
             if (isConfigured) {
                 _state.value = SplashState.NavigateToHome
@@ -48,4 +46,5 @@ class SplashViewModel @Inject constructor(
             }
         }
     }
+
 }

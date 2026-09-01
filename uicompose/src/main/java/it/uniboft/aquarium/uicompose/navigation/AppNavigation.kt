@@ -1,8 +1,10 @@
 package it.uniboft.aquarium.uicompose.navigation
 
-
+import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
@@ -13,37 +15,43 @@ import it.uniboft.aquarium.uicompose.screens.home.HomeScreen
 import it.uniboft.aquarium.uicompose.screens.notifications.NotificationsScreen
 import it.uniboft.aquarium.uicompose.screens.scanner.ScannerScreen
 import it.uniboft.aquarium.uicompose.screens.settings.SettingsScreen
-import it.uniboft.aquarium.uicompose.screens.splash.SplashScreen
+import it.uniboft.aquarium.uicompose.screens.splash.SplashState
 import it.uniboft.aquarium.uicompose.screens.splash.SplashViewModel
-
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
-
 
     NavHost(
         navController = navController,
         startDestination = Routes.Splash.route
     ) {
         composable(Routes.Splash.route) {
-            val viewModel: SplashViewModel = hiltViewModel()
-            // BEST PRACTICE: Sostituito collectAsState() con collectAsStateWithLifecycle()
+            // BEST PRACTICE: Recuperiamo il ViewModel ancorato all'Activity
+            // per mantenere lo stato sincronizzato con la dismiss della Splash Screen OS.
+            val context = LocalContext.current
+            val viewModel: SplashViewModel = hiltViewModel(context as ComponentActivity)
+
             val state by viewModel.state.collectAsStateWithLifecycle()
 
-            SplashScreen(
-                state = state,
-                onNavigateToHome = {
-                    navController.navigate(Routes.Home.route) {
-                        popUpTo(Routes.Splash.route) { inclusive = true }
+            LaunchedEffect(state) {
+                when (state) {
+                    is SplashState.NavigateToHome -> {
+                        navController.navigate(Routes.Home.route) {
+                            popUpTo(Routes.Splash.route) { inclusive = true }
+                        }
                     }
-                },
-                onNavigateToScanner = {
-                    navController.navigate(Routes.Scanner.route) {
-                        popUpTo(Routes.Splash.route) { inclusive = true }
+                    is SplashState.NavigateToScanner -> {
+                        navController.navigate(Routes.Scanner.route) {
+                            popUpTo(Routes.Splash.route) { inclusive = true }
+                        }
+                    }
+                    SplashState.Loading -> {
+                        // Nessuna UI renderizzata: il sistema operativo sta coprendo l'app
+                        // con la windowSplashScreenAnimatedIcon nativa per i 4 secondi configurati.
                     }
                 }
-            )
+            }
         }
 
         composable(Routes.Scanner.route) {
@@ -81,3 +89,4 @@ fun AppNavigation() {
         }
     }
 }
+
