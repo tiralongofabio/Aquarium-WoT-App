@@ -24,6 +24,13 @@ import it.uniboft.aquarium.domain.models.WaterQuality
 import java.util.Locale
 
 
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import it.uniboft.aquarium.uicompose.R // Assicurati di importare l'R corretto
+import androidx.compose.ui.semantics.stateDescription
+
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -175,31 +182,37 @@ private fun PumpControlCard(isPumpRunning: Boolean, pumpSpeed: Int, onToggle: (B
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = if (isPumpRunning) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+            containerColor = if (isPumpRunning) MaterialTheme.colorScheme.primaryContainer
+            else MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp).semantics(mergeDescendants = true) {},
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .semantics(mergeDescendants = true) {
+                    // TalkBack annuncerà: "Pompa Filtro, Interruttore, [Stato]"
+                    stateDescription = if (isPumpRunning) "Attiva al $pumpSpeed percento" else "Spenta"
+                },
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
-                Text(text = "Pompa Filtro", style = MaterialTheme.typography.titleLarge)
+                Text(text = stringResource(R.string.pump_title), style = MaterialTheme.typography.titleLarge)
                 Text(
-                    text = if (isPumpRunning) "Attiva ($pumpSpeed%)" else "Spenta",
+                    text = if (isPumpRunning) stringResource(R.string.pump_active, pumpSpeed)
+                    else stringResource(R.string.pump_inactive),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
             Switch(
                 checked = isPumpRunning,
                 onCheckedChange = onToggle,
-                modifier = Modifier.semantics {
-                    contentDescription = "Interruttore pompa filtro"
-                    role = Role.Switch
-                }
+                modifier = Modifier.clearAndSetSemantics { } // Pulisce la semantica duplicata dello switch figlio
             )
         }
     }
+
 }
 
 

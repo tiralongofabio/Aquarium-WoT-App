@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Aquarium WoT</string>
+    <string name="home_title">Aquarium WoT</string>
+    <string name="status_ble_searching">Searching for Bluetooth device…</string>
+    <string name="status_wot_offline">WoT device unavailable</string>
+    <string name="sensor_temp">Temp</string>
+    <string name="sensor_ph">pH</string>
+    <string name="sensor_o2">O2</string>
+    <string name="pump_title">Filter Pump</string>
+    <string name="pump_active">Active (%1$d%%)</string>
+    <string name="pump_inactive">Off</string>
+    <string name="filter_health">Filter Health: %1$.0f%%</string>
+    <string name="btn_cleaning">Cleaning…</string>
+    <string name="btn_start">Start</string>
+</resources>

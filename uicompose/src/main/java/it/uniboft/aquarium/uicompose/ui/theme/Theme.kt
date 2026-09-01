@@ -78,6 +78,8 @@ fun AquariumTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        content = content
+        content = content,
+        typography = AppTypography
+
     )
 }

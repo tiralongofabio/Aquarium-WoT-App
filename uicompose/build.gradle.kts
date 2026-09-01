@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "com.unibo.android.automazione.uicompose"
+    namespace = "it.uniboft.aquarium.uicompose"
     compileSdk = 37
 
     defaultConfig {
