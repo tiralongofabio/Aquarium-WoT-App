@@ -1,6 +1,5 @@
 package it.uniboft.aquarium.uicompose.screens.notifications
 
-
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,12 +13,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLocale
-//import androidx.compose.ui.semantics.mergeDescendants
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import it.uniboft.aquarium.domain.models.Alert
+import it.uniboft.aquarium.uicompose.R
 import java.text.SimpleDateFormat
 import java.util.Date
 
@@ -36,10 +36,10 @@ fun NotificationsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Registro Notifiche") },
+                title = { Text(stringResource(R.string.notifications_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Torna indietro")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.nav_back_desc))
                     }
                 }
             )
@@ -47,7 +47,7 @@ fun NotificationsScreen(
     ) { paddingValues ->
         if (alerts.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
-                Text("Nessuna anomalia registrata.", style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(R.string.notifications_empty), style = MaterialTheme.typography.bodyLarge)
             }
         } else {
             LazyColumn(
@@ -70,20 +70,17 @@ private fun AlertItemCard(alert: Alert) {
     val dateString = formatter.format(Date(alert.timestamp))
 
 
-    // Mapping dinamico della palette in base alla severità calcolata
     val containerColor = when (alert.severity) {
         "critical" -> MaterialTheme.colorScheme.errorContainer
-        "warning" -> MaterialTheme.colorScheme.tertiaryContainer // Solitamente un colore caldo nel default M3
+        "warning" -> MaterialTheme.colorScheme.tertiaryContainer
         else -> MaterialTheme.colorScheme.surfaceVariant
     }
-
 
     val iconColor = when (alert.severity) {
         "critical" -> MaterialTheme.colorScheme.error
         "warning" -> MaterialTheme.colorScheme.tertiary
         else -> MaterialTheme.colorScheme.primary
     }
-
 
     val iconVector = if (alert.severity == "critical") Icons.Default.Error else Icons.Default.Warning
 
@@ -102,7 +99,6 @@ private fun AlertItemCard(alert: Alert) {
             Spacer(modifier = Modifier.width(16.dp))
             Column {
                 Text(text = alert.message, style = MaterialTheme.typography.titleMedium)
-                // Il valore qui estratto è già stato normalizzato ad una singola cifra decimale dal Manager
                 Text(
                     text = "$dateString • ${alert.parameter}: ${alert.value}",
                     style = MaterialTheme.typography.bodyMedium

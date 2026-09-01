@@ -13,4 +13,40 @@
     <string name="filter_health">Salute Filtro: %1$.0f%%</string>
     <string name="btn_cleaning">Pulizia…</string>
     <string name="btn_start">Avvia</string>
+
+
+    <!-- Azioni Comuni -->
+    <string name="nav_back_desc">Torna indietro</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Impostazioni</string>
+    <string name="settings_notifications">Registro Notifiche</string>
+    <string name="settings_notifications_desc">Storico degli allarmi e anomalie</string>
+    <string name="settings_config">Configurazione Range</string>
+    <string name="settings_config_desc">Imposta i valori ottimali per pH, Temp e O2</string>
+    <string name="settings_add_device">Aggiungi Dispositivo</string>
+    <string name="settings_add_device_desc">Inquadra un nuovo QR-Code</string>
+
+    <!-- Notifications Screen -->
+    <string name="notifications_title">Registro Notifiche</string>
+    <string name="notifications_empty">Nessuna anomalia registrata.</string>
+
+    <!-- Configuration Screen -->
+    <string name="config_title">Configurazione Range</string>
+    <string name="config_save_desc">Salva configurazione</string>
+    <string name="config_system_mode">Modalità di Sistema</string>
+    <string name="config_mode_demo">Demo</string>
+    <string name="config_mode_production">Produzione</string>
+    <string name="config_reset_defaults">Ripristina Valori di Default</string>
+    <string name="config_reset_desc">Ripristina i valori di default di fabbrica</string>
+    <string name="config_optimal_range">Range Ottimale: %1$s - %2$s %3$s</string>
+    <string name="config_hardware_limits">Limiti Hardware: %1$s - %2$s %3$s</string>
+
+    <!-- Scanner Screen -->
+    <string name="scanner_title">Aggiungi Dispositivo</string>
+    <string name="scanner_perm_rationale">La fotocamera è necessaria per inquadrare il QR-Code del nuovo apparato WoT.</string>
+    <string name="scanner_perm_grant">Concedi Permesso</string>
+    <string name="scanner_perm_denied">Permesso fotocamera negato. Per aggiungere un dispositivo, abilitalo dalle impostazioni.</string>
+    <string name="scanner_open_settings">Apri Impostazioni</string>
+
 </resources>

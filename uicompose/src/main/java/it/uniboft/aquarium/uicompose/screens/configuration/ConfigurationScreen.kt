@@ -12,11 +12,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import it.uniboft.aquarium.uicompose.R
 import java.util.Locale
 
 
@@ -46,10 +48,10 @@ fun ConfigurationScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Configurazione Range") },
+                title = { Text(stringResource(R.string.config_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Torna indietro")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.nav_back_desc))
                     }
                 },
                 actions = {
@@ -58,7 +60,7 @@ fun ConfigurationScreen(
                             onClick = viewModel::saveConfig,
                             enabled = !uiState.isSaving
                         ) {
-                            Icon(Icons.Default.Check, contentDescription = "Salva configurazione")
+                            Icon(Icons.Default.Check, contentDescription = stringResource(R.string.config_save_desc))
                         }
                     }
                 }
@@ -80,14 +82,14 @@ fun ConfigurationScreen(
                         currentMode = uiState.config!!.mode,
                         onModeSelected = viewModel::updateMode
                     )
-
                     HorizontalDivider()
-
 
                     uiState.config!!.parameters.forEach { (key, paramConfig) ->
                         ParameterSliderCard(
                             config = paramConfig,
-                            onRangeChanged = { min, max -> viewModel.updateOptimalRange(key, min, max) }
+                            onRangeChanged = { min, max ->
+                                viewModel.updateOptimalRange(key, min, max)
+                            }
                         )
                     }
 
@@ -97,12 +99,12 @@ fun ConfigurationScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 8.dp, bottom = 24.dp)
-                            .semantics { contentDescription = "Ripristina i valori di default di fabbrica" },
+                            .semantics { contentDescription = "Ripristina i valori di default di fabbrica" }, // Use explicit string logic for a11y if needed, handled inline here for simplicity
                         enabled = !uiState.isSaving
                     ) {
                         Icon(Icons.Default.Refresh, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Ripristina Valori di Default")
+                        Text(stringResource(R.string.config_reset_defaults))
                     }
                 }
             }
@@ -119,18 +121,18 @@ fun ConfigurationScreen(
 @Composable
 private fun ModeSelector(currentMode: String, onModeSelected: (String) -> Unit) {
     Column {
-        Text("Modalità di Sistema", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.config_system_mode), style = MaterialTheme.typography.titleMedium)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(
                 selected = currentMode == "demo",
                 onClick = { onModeSelected("demo") },
-                label = { Text("Demo") },
+                label = { Text(stringResource(R.string.config_mode_demo)) },
                 modifier = Modifier.semantics { contentDescription = "Seleziona modalità demo" }
             )
             FilterChip(
                 selected = currentMode == "production",
                 onClick = { onModeSelected("production") },
-                label = { Text("Produzione") },
+                label = { Text(stringResource(R.string.config_mode_production)) },
                 modifier = Modifier.semantics { contentDescription = "Seleziona modalità produzione" }
             )
         }
@@ -149,10 +151,14 @@ private fun ParameterSliderCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Range Ottimale: ${String.format(Locale.US, "%.1f", config.optimal.min)} - ${String.format(Locale.US, "%.1f", config.optimal.max)} ${config.unit}",
+                text = stringResource(
+                    R.string.config_optimal_range,
+                    String.format(Locale.US, "%.1f", config.optimal.min),
+                    String.format(Locale.US, "%.1f", config.optimal.max),
+                    config.unit
+                ),
                 style = MaterialTheme.typography.bodyMedium
             )
-
 
             RangeSlider(
                 value = config.optimal.min.toFloat()..config.optimal.max.toFloat(),
@@ -162,13 +168,16 @@ private fun ParameterSliderCard(
                     onRangeChanged(min, max)
                 },
                 valueRange = config.configurable.min.toFloat()..config.configurable.max.toFloat(),
-                modifier = Modifier.semantics {
-                    contentDescription = "Regola range ottimale per ${config.description}"
-                }
+                modifier = Modifier.semantics { contentDescription = "Regola range ottimale per ${config.description}" }
             )
 
             Text(
-                text = "Limiti Hardware: ${config.configurable.min} - ${config.configurable.max} ${config.unit}",
+                text = stringResource(
+                    R.string.config_hardware_limits,
+                    config.configurable.min.toString(),
+                    config.configurable.max.toString(),
+                    config.unit
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

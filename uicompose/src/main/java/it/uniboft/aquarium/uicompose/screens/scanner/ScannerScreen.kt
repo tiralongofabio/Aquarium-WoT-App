@@ -24,6 +24,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -38,6 +39,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
+import it.uniboft.aquarium.uicompose.R
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,9 +64,6 @@ fun ScannerScreen(
     var showRationale by remember {
         mutableStateOf(activity?.let { ActivityCompat.shouldShowRequestPermissionRationale(it, Manifest.permission.CAMERA) } ?: false)
     }
-
-
-    // Flag per eliminare i flash visivi
     var isRequestingPermission by remember { mutableStateOf(false) }
     var hasAttemptedRequest by remember { mutableStateOf(false) }
 
@@ -118,10 +117,10 @@ fun ScannerScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Aggiungi Dispositivo") },
+                title = { Text(stringResource(R.string.scanner_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Torna indietro")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.nav_back_desc))
                     }
                 }
             )
@@ -134,7 +133,6 @@ fun ScannerScreen(
                         onBarcodeScanned = { barcode -> viewModel.onQrCodeScanned(barcode) }
                     )
                 }
-                // Mostra un caricatore neutro finché l'OS sta gestendo la dialog o stiamo avviando la richiesta
                 isRequestingPermission || (!hasAttemptedRequest && !showRationale) -> {
                     CircularProgressIndicator(
                         modifier = Modifier.semantics { contentDescription = "Richiesta permesso in corso" }
@@ -142,8 +140,8 @@ fun ScannerScreen(
                 }
                 showRationale -> {
                     PermissionExplanationUI(
-                        message = "La fotocamera è necessaria per inquadrare e leggere il QR-Code del nuovo apparato WoT.",
-                        buttonText = "Concedi Permesso",
+                        message = stringResource(R.string.scanner_perm_rationale),
+                        buttonText = stringResource(R.string.scanner_perm_grant),
                         onButtonClick = {
                             isRequestingPermission = true
                             permissionLauncher.launch(Manifest.permission.CAMERA)
@@ -152,8 +150,8 @@ fun ScannerScreen(
                 }
                 else -> {
                     PermissionExplanationUI(
-                        message = "Permesso fotocamera negato. Per aggiungere un dispositivo, devi abilitarlo dalle impostazioni.",
-                        buttonText = "Apri Impostazioni",
+                        message = stringResource(R.string.scanner_perm_denied),
+                        buttonText = stringResource(R.string.scanner_open_settings),
                         onButtonClick = { context.openAppSettings() }
                     )
                 }
@@ -179,7 +177,6 @@ private fun CameraPreviewView(onBarcodeScanned: (String) -> Unit) {
 
             cameraProviderFuture.addListener({
                 val cameraProvider = cameraProviderFuture.get()
-
                 val preview = Preview.Builder().build().also {
                     @Suppress("UsePropertyAccessSyntax")
                     it.setSurfaceProvider(previewView.surfaceProvider)
@@ -199,14 +196,10 @@ private fun CameraPreviewView(onBarcodeScanned: (String) -> Unit) {
                         barcodeScanner.process(image)
                             .addOnSuccessListener { barcodes ->
                                 for (barcode in barcodes) {
-                                    barcode.rawValue?.let { value ->
-                                        onBarcodeScanned(value)
-                                    }
+                                    barcode.rawValue?.let { value -> onBarcodeScanned(value) }
                                 }
                             }
-                            .addOnCompleteListener {
-                                imageProxy.close()
-                            }
+                            .addOnCompleteListener { imageProxy.close() }
                     } else {
                         imageProxy.close()
                     }
@@ -214,8 +207,6 @@ private fun CameraPreviewView(onBarcodeScanned: (String) -> Unit) {
 
 
                 val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
-
                 try {
                     cameraProvider.unbindAll()
                     cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageAnalysis)

@@ -12,23 +12,20 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import it.uniboft.aquarium.domain.models.WaterQuality
+import it.uniboft.aquarium.uicompose.R
 import java.util.Locale
-
-
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import it.uniboft.aquarium.uicompose.R // Assicurati di importare l'R corretto
-import androidx.compose.ui.semantics.stateDescription
-
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,18 +40,13 @@ fun HomeScreen(
 
     LifecycleResumeEffect(Unit) {
         viewModel.startPolling()
-        onPauseOrDispose {
-            viewModel.stopPolling()
-        }
+        onPauseOrDispose { viewModel.stopPolling() }
     }
 
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { error ->
-            snackbarHostState.showSnackbar(
-                message = error,
-                duration = SnackbarDuration.Short
-            )
+            snackbarHostState.showSnackbar(message = error, duration = SnackbarDuration.Short)
             viewModel.errorShown()
         }
     }
@@ -64,7 +56,7 @@ fun HomeScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Acquario WoT") },
+                title = { Text(stringResource(R.string.home_title)) },
                 actions = {
                     IconButton(
                         onClick = onNavigateToSettings,
@@ -85,9 +77,7 @@ fun HomeScreen(
         ) {
             if (uiState.waterQuality == WaterQuality.Neutral && uiState.isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.semantics { contentDescription = "Caricamento sensori" }
-                    )
+                    CircularProgressIndicator(modifier = Modifier.semantics { contentDescription = "Caricamento sensori" })
                 }
             } else {
                 Column(
@@ -97,14 +87,14 @@ fun HomeScreen(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Banner informativo: Ricerca BLE in corso
                     AnimatedVisibility(visible = !uiState.isBleConnected) {
+                        val bleSearchingDesc = stringResource(R.string.status_ble_searching)
                         Card(
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                                 contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                             ),
-                            modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Ricerca apparato Bluetooth in corso" }
+                            modifier = Modifier.fillMaxWidth().semantics { contentDescription = bleSearchingDesc }
                         ) {
                             Row(
                                 modifier = Modifier.padding(16.dp),
@@ -112,30 +102,30 @@ fun HomeScreen(
                                 horizontalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
                                 CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                                Text(
-                                    text = "Ricerca apparato Bluetooth...",
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
+                                Text(text = bleSearchingDesc, style = MaterialTheme.typography.bodyLarge)
                             }
                         }
                     }
 
 
                     AnimatedVisibility(visible = uiState.isConnectionUnstable) {
+                        val wotOfflineDesc = stringResource(R.string.status_wot_offline)
                         Card(
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.errorContainer,
                                 contentColor = MaterialTheme.colorScheme.onErrorContainer
                             ),
-                            modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Apparato WoT non disponibile" }
+                            modifier = Modifier.fillMaxWidth().semantics { contentDescription = wotOfflineDesc }
                         ) {
                             Text(
-                                text = "Apparato WoT non disponibile",
+                                text = wotOfflineDesc,
                                 style = MaterialTheme.typography.bodyLarge,
                                 modifier = Modifier.padding(16.dp)
                             )
                         }
                     }
+
+
                     WaterQualitySensors(waterQuality = uiState.waterQuality)
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     PumpControlCard(
@@ -159,17 +149,17 @@ fun HomeScreen(
 private fun WaterQualitySensors(waterQuality: WaterQuality) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         SensorCard(
-            title = "Temp",
+            title = stringResource(R.string.sensor_temp),
             value = String.format(Locale.US, "%.1f °C", waterQuality.temperature),
             modifier = Modifier.weight(1f)
         )
         SensorCard(
-            title = "pH",
+            title = stringResource(R.string.sensor_ph),
             value = String.format(Locale.US, "%.2f", waterQuality.ph),
             modifier = Modifier.weight(1f)
         )
         SensorCard(
-            title = "O2",
+            title = stringResource(R.string.sensor_o2),
             value = String.format(Locale.US, "%.1f mg/L", waterQuality.oxygenLevel),
             modifier = Modifier.weight(1f)
         )
@@ -179,11 +169,12 @@ private fun WaterQualitySensors(waterQuality: WaterQuality) {
 
 @Composable
 private fun PumpControlCard(isPumpRunning: Boolean, pumpSpeed: Int, onToggle: (Boolean) -> Unit) {
+    val stateDesc = if (isPumpRunning) stringResource(R.string.pump_active, pumpSpeed) else stringResource(R.string.pump_inactive)
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = if (isPumpRunning) MaterialTheme.colorScheme.primaryContainer
-            else MaterialTheme.colorScheme.surfaceVariant
+            containerColor = if (isPumpRunning) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
         Row(
@@ -191,36 +182,33 @@ private fun PumpControlCard(isPumpRunning: Boolean, pumpSpeed: Int, onToggle: (B
                 .fillMaxWidth()
                 .padding(16.dp)
                 .semantics(mergeDescendants = true) {
-                    // TalkBack annuncerà: "Pompa Filtro, Interruttore, [Stato]"
-                    stateDescription = if (isPumpRunning) "Attiva al $pumpSpeed percento" else "Spenta"
+                    stateDescription = stateDesc
                 },
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
                 Text(text = stringResource(R.string.pump_title), style = MaterialTheme.typography.titleLarge)
-                Text(
-                    text = if (isPumpRunning) stringResource(R.string.pump_active, pumpSpeed)
-                    else stringResource(R.string.pump_inactive),
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Text(text = stateDesc, style = MaterialTheme.typography.bodyMedium)
             }
             Switch(
                 checked = isPumpRunning,
                 onCheckedChange = onToggle,
-                modifier = Modifier.clearAndSetSemantics { } // Pulisce la semantica duplicata dello switch figlio
+                modifier = Modifier.clearAndSetSemantics { role = Role.Switch }
             )
         }
     }
-
 }
 
 
 @Composable
 private fun FilterHealthCard(health: Double, isCleaning: Boolean, onStartCleaning: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text(text = "Salute Filtro: ${String.format(Locale.US, "%.0f", health)}%", style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = stringResource(R.string.filter_health, health),
+                style = MaterialTheme.typography.titleMedium
+            )
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -233,9 +221,12 @@ private fun FilterHealthCard(health: Double, isCleaning: Boolean, onStartCleanin
                 )
                 Button(
                     onClick = onStartCleaning,
-                    enabled = !isCleaning
+                    enabled = !isCleaning,
+                    modifier = Modifier.clearAndSetSemantics {
+                        contentDescription = if (isCleaning) "Pulizia filtro in corso" else "Avvia ciclo di pulizia del filtro"
+                    }
                 ) {
-                    Text(if (isCleaning) "Pulizia..." else "Avvia")
+                    Text(if (isCleaning) stringResource(R.string.btn_cleaning) else stringResource(R.string.btn_start))
                 }
             }
         }
@@ -245,7 +236,7 @@ private fun FilterHealthCard(health: Double, isCleaning: Boolean, onStartCleanin
 
 @Composable
 private fun SensorCard(title: String, value: String, modifier: Modifier = Modifier) {
-    Card(modifier = modifier) {
+    Card(modifier = modifier.semantics(mergeDescendants = true) {}) {
         Column(
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally

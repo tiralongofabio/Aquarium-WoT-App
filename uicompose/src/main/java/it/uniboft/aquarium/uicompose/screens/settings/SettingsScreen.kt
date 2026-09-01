@@ -11,13 +11,15 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import it.uniboft.aquarium.uicompose.R
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,10 +33,10 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Impostazioni") },
+                title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Torna indietro")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.nav_back_desc))
                     }
                 }
             )
@@ -48,22 +50,22 @@ fun SettingsScreen(
         ) {
             SettingsMenuItem(
                 icon = Icons.AutoMirrored.Filled.List,
-                title = "Registro Notifiche",
-                subtitle = "Storico degli allarmi e anomalie",
+                title = stringResource(R.string.settings_notifications),
+                subtitle = stringResource(R.string.settings_notifications_desc),
                 onClick = onNavigateToNotifications
             )
             HorizontalDivider()
             SettingsMenuItem(
                 icon = Icons.Default.Build,
-                title = "Configurazione Range",
-                subtitle = "Imposta i valori ottimali per pH, Temp e O2",
+                title = stringResource(R.string.settings_config),
+                subtitle = stringResource(R.string.settings_config_desc),
                 onClick = onNavigateToConfiguration
             )
             HorizontalDivider()
             SettingsMenuItem(
                 icon = Icons.Default.Add,
-                title = "Aggiungi Dispositivo",
-                subtitle = "Inquadra un nuovo QR-Code",
+                title = stringResource(R.string.settings_add_device),
+                subtitle = stringResource(R.string.settings_add_device_desc),
                 onClick = onNavigateToScanner
             )
         }

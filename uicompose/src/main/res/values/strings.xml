@@ -13,4 +13,42 @@
     <string name="filter_health">Filter Health: %1$.0f%%</string>
     <string name="btn_cleaning">Cleaning…</string>
     <string name="btn_start">Start</string>
+
+    <!-- Azioni Comuni -->
+    <string name="nav_back_desc">Go back</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_notifications">Notifications Log</string>
+    <string name="settings_notifications_desc">History of alarms and anomalies</string>
+    <string name="settings_config">Range Configuration</string>
+    <string name="settings_config_desc">Set optimal values for pH, Temp and O2</string>
+    <string name="settings_add_device">Add Device</string>
+    <string name="settings_add_device_desc">Scan a new QR-Code</string>
+
+    <!-- Notifications Screen -->
+    <string name="notifications_title">Notifications Log</string>
+    <string name="notifications_empty">No anomalies recorded.</string>
+
+    <!-- Configuration Screen -->
+    <string name="config_title">Range Configuration</string>
+    <string name="config_save_desc">Save configuration</string>
+    <string name="config_system_mode">System Mode</string>
+    <string name="config_mode_demo">Demo</string>
+    <string name="config_mode_production">Production</string>
+    <string name="config_reset_defaults">Reset to Defaults</string>
+    <string name="config_reset_desc">Restore factory default values</string>
+    <string name="config_optimal_range">Optimal Range: %1$s - %2$s %3$s</string>
+    <string name="config_hardware_limits">Hardware Limits: %1$s - %2$s %3$s</string>
+
+    <!-- Scanner Screen -->
+    <string name="scanner_title">Add Device</string>
+    <string name="scanner_perm_rationale">The camera is required to scan the QR-Code of the new WoT device.</string>
+    <string name="scanner_perm_grant">Grant Permission</string>
+    <string name="scanner_perm_denied">Camera permission denied. Enable it in settings to add a device.</string>
+    <string name="scanner_open_settings">Open Settings</string>
+
+
+
+
 </resources>
