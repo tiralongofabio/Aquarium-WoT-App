@@ -77,6 +77,25 @@ Ad ogni push o pull request sul branch `main`, i runner effimeri di GitHub compi
 
 ## Per la Demo
 
+
+### Abilitazioni di rete
+
+Prima del deploy dell'applicazione, verificare che Device moble e Emulatore WoT siano nella stessa subnet e l'indirizzo IP (del PC) su cui sono esposte le API WoT
+
+Nel PC che emula l'apparato WoT
+- WIN+R
+- wf.msc
+- Abilitazione delle regola firewall in entrata "TEST APP WoT" (disabilitare a fine demo)
+
+
+NB: per questa demo, al fine di semplificare le regole e rotte di rete, gli IP target (http, locali) non sono acquisiti tramite QR-Code, ma hardcoded.
+
+Da Androind Studio, verificare/impstare l'IP target corretto in
+- data/di/NetworkModule.kt
+- app/src/main/res/xml/network_security_config.xml
+
+
+
 ### Apparato-WoT
 Avviare in **VS-Code** un clone del progetto ([Aquarium-WoT-BLE
 ](https://github.com/tiralongofabio/Aquarium-WoT-BLE))
@@ -107,20 +126,6 @@ l'App si collegherà all'IP locale via HTTP, senza necesstià di connessione blu
 in caso di deploy su dispositivo android reale è necessario utilizzare anche un secondo device (mock dell'interfaccia BLE dell'apparato WoT), in questo caso simulato con un secondo smatphone su cui è già installata e configurata con i giusti end-point un'applicazione ad hoc (nRF Connect);
 la connessione alle API avverrà quidni via http, su rete locale, ma solo a patto di aver prima stabilito la connessione bluetooth
 
-### Abilitazioni di rete
 
-Prima del deploy dell'applicazione, verificare che Device moble e Emulatore WoT siano nella stessa subnet e l'indirizzo IP (del PC) su cui sono esposte le API WoT
-
-Nel PC che emula l'apparato WoT
- - WIN+R
- - wf.msc
- - Abilitazione delle regola firewall in entrata "TEST APP WoT" (disabilitare a fine demo)
-
-
-NB: per questa demo, al fine di semplificare le regole e rotte di rete, gli IP target (http, locali) non sono acquisiti tramite QR-Code, ma hardcoded.  
-
-Da Androind Studio, verificare/impstare l'IP target corretto in
- - data/di/NetworkModule.kt
- - app/src/main/res/xml/network_security_config.xml
 
 
