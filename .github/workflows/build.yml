@@ -1,0 +1,45 @@
+name: Android Release Build
+
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+
+jobs:
+  build:
+    name: Build and Upload APK
+    runs-on: ubuntu-latest
+
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+          cache: 'gradle'
+
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+
+      - name: Build Release APK
+        # Usa --no-daemon per ottimizzare la memoria sui runner effimeri di GitHub
+        run: ./gradlew assembleRelease --no-daemon
+
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AquariumWoT-Release-APK
+          # Il percorso punta all'APK generato da R8 senza firma crittografica
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
+          retention-days: 14
